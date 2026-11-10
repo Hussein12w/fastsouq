@@ -152,8 +152,7 @@ body.admin-bar .hdr{top:32px}
 .qs-card .b-y{background:#FFC93C;color:#0E1A3A;display:inline-flex;align-items:center;gap:3px}
 .csub{font-size:13px;font-weight:700;color:var(--y);margin:-2px 0 4px}
 .c-acts{display:flex;gap:6px;margin-top:10px}
-.c-acts .btn-line{flex:1;justify-content:center}
-.c-acts .btn-wa{width:40px;padding:0;justify-content:center}
+.c-acts .btn{flex:1 1 0;min-width:0;justify-content:center;gap:6px;padding:0 8px;white-space:nowrap}
 .svc-sec{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--y);background:var(--ysoft);padding:3px 10px;border-radius:999px;font-size:13px}
 .grid.g3{grid-template-columns:repeat(3,1fr)}
 @media (max-width:1000px){.grid.g3{grid-template-columns:repeat(2,1fr)}}
@@ -357,10 +356,10 @@ html,body{overflow-x:clip}
 .grid.g5{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
 .grid.g5 .cbody{padding:12px 12px 13px}
 .grid.g5 .card h3{font-size:14.5px}
-.grid.g5 .c-acts .btn-line{font-size:12.5px;padding:0 8px}
+.grid.g5 .c-acts .btn{font-size:13px;padding:0 6px;gap:5px}
 @media (max-width:1200px){.grid.g5{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:1000px){.grid.g5{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.cdesc,.c-lbl{display:none}
+.cdesc{display:none}
 
 /* Sponsored spaces */
 .spons{position:relative;border-radius:16px;overflow:hidden;background:#fff;box-shadow:var(--sh)}
@@ -398,9 +397,6 @@ html,body{overflow-x:clip}
 .res-box.is-list .qs-card .price{font-size:22px}
 .res-box.is-list .cdesc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--mut);font-size:14px;margin:0}
 .res-box.is-list .c-acts{margin-top:auto;padding-top:8px;max-width:420px}
-.res-box.is-list .c-acts .ltr{display:none}
-.res-box.is-list .c-lbl{display:inline}
-.res-box.is-list .c-acts .btn-wa{width:auto;padding:0 16px;flex:1;gap:6px}
 .res-box.is-list .c-acts .btn{height:40px}
 @media (max-width:860px){
   .view-tg button{width:36px;height:34px}
@@ -411,9 +407,7 @@ html,body{overflow-x:clip}
   .res-box.is-list .qs-card h3{font-size:13.5px;-webkit-line-clamp:2}
   .res-box.is-list .qs-card .price{font-size:16px}
   .res-box.is-list .cdesc{display:none}
-  .res-box.is-list .c-acts .c-lbl{display:none}
   .res-box.is-list .c-acts .btn{height:34px}
-  .res-box.is-list .c-acts .btn-wa{flex:0 0 40px;padding:0}
 }
 
 /* Post form: main categories */
@@ -425,3 +419,18 @@ html,body{overflow-x:clip}
 .car-secs h3{font-size:17px;font-weight:900;margin-bottom:12px}
 @media (max-width:1000px){.type-grid.mains{grid-template-columns:repeat(4,1fr)}}
 @media (max-width:600px){.type-grid.mains{grid-template-columns:repeat(3,1fr);gap:8px}.type-grid.mains b{font-size:12px}}
+
+/* Home: up to 10 ads per category in rows of 5; on phones and tablets each row slides sideways */
+.ad-row+.ad-row{margin-top:14px}
+@media (max-width:1000px){
+  .ad-rows .ad-row{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;gap:10px;margin-inline:-16px;padding:2px 16px 6px;scroll-padding-inline:16px}
+  .ad-rows .ad-row::-webkit-scrollbar{display:none}
+  .ad-rows .ad-row>.card{flex:0 0 calc((100% - 10px)/2.15);scroll-snap-align:start}
+  .ad-row+.ad-row{margin-top:10px}
+}
+@media (min-width:601px) and (max-width:1000px){.ad-rows .ad-row>.card{flex-basis:calc((100% - 20px)/3.2)}}
+@media (max-width:860px){.c-acts .btn{height:34px;font-size:12.5px;gap:4px;padding:0 4px}.c-acts .btn .ic{width:16px;height:16px}}
+@media (max-width:350px){.c-acts .c-lbl{display:none}}
+/* 5 per row on laptops and desktops */
+@media (min-width:1001px) and (max-width:1200px){.grid.g5{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.grid.g5 .card h3{font-size:13.5px}}
+.qs-card .cbody>.c-acts{margin-top:auto;padding-top:10px}

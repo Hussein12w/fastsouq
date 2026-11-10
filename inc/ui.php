@@ -252,7 +252,7 @@ function qs_card( $id ) {
 		$line2 = '';
 	}
 	$attrs = array_slice( array_filter( $attrs ), 0, 3 );
-	$acts  = $phone ? '<div class="c-acts"><a class="btn btn-sm btn-line c-call" href="tel:+' . esc_attr( $phone ) . '">' . qs_ic( 'phone' ) . ' <span class="ltr">' . esc_html( qs_phone_fmt( $phone ) ) . '</span><span class="c-lbl">' . esc_html( qs_t( 'call' ) ) . '</span></a><a class="btn btn-sm btn-wa" href="' . esc_url( qs_wa_link( $phone, qs_title( $id ) . ' — ' . $url ) ) . '" target="_blank" rel="noopener" aria-label="WhatsApp">' . qs_ic( 'wa' ) . '<span class="c-lbl">' . esc_html( qs_t( 'whatsapp' ) ) . '</span></a></div>' : '';
+	$acts  = $phone ? '<div class="c-acts"><a class="btn btn-sm btn-line c-call" href="tel:+' . esc_attr( $phone ) . '" aria-label="' . esc_attr( qs_t( 'call' ) . ' ' . qs_phone_fmt( $phone ) ) . '">' . qs_ic( 'phone' ) . '<span class="c-lbl">' . esc_html( qs_t( 'call' ) ) . '</span></a><a class="btn btn-sm btn-wa" href="' . esc_url( qs_wa_link( $phone, qs_title( $id ) . ' — ' . $url ) ) . '" target="_blank" rel="noopener" aria-label="WhatsApp">' . qs_ic( 'wa' ) . '<span class="c-lbl">' . esc_html( qs_t( 'whatsapp' ) ) . '</span></a></div>' : '';
 	$desc  = wp_trim_words( wp_strip_all_tags( qs_desc( $id ) ), 26, '…' );
 	return '<article class="card dz qs-card g-' . esc_attr( $group ) . ( qs_m( $id, 'featured' ) ? ' is-feat' : '' ) . '"><a class="stretch" href="' . esc_url( $url ) . '" aria-label="' . esc_attr( qs_title( $id ) ) . '"></a>
     <div class="media">' . qs_media( $id ) . '<div class="badges">' . $badge . '</div>' . qs_fav_btn( $id ) . '</div>

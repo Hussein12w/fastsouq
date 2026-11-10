@@ -19,6 +19,14 @@ if ( ! $slides && get_theme_mod( 'qs_hero' ) ) {
 	$slides[] = array( 'img' => get_theme_mod( 'qs_hero' ), 'link' => '' );
 }
 $nav = qs_nav();
+/* Up to 10 ads in rows of 5 (on phones each row slides sideways). */
+function qs_ad_rows( $ids ) {
+	$h = '<div class="ad-rows">';
+	foreach ( array_chunk( array_slice( $ids, 0, 10 ), 5 ) as $row ) {
+		$h .= '<div class="grid g5 ad-row">' . implode( '', array_map( 'qs_card', $row ) ) . '</div>';
+	}
+	return $h . '</div>';
+}
 ?>
 <section class="hs" data-hs>
 	<div class="hs-track">
@@ -64,17 +72,16 @@ foreach ( qs_menu_split()[0] as $n ) {
 	if ( ! $list ) {
 		continue;
 	}
-	echo '<section class="wrap sec">' . qs_sec_head( $n['label'], $n['url'], $n['icon'] ) . '<div class="grid g5">' . implode( '', array_map( 'qs_card', $list ) ) . '</div></section>'; // phpcs:ignore
+	echo '<section class="wrap sec">' . qs_sec_head( $n['label'], $n['url'], $n['icon'] ) . qs_ad_rows( $list ) . '</section>'; // phpcs:ignore
 	if ( 1 === ++$shown ) {
 		$mid = qs_sponsored( 'home_mid' );
 		echo $mid ? '<section class="wrap sec-spons">' . $mid . '</section>' : '<section class="wrap"><div class="promo qs-promo"><div class="promo-txt"><h2>' . esc_html( qs_t( 'promo_t' ) ) . '</h2><p>' . esc_html( qs_t( 'promo_p' ) ) . '</p><a class="btn btn-y2 btn-lg" href="' . esc_url( qs_page_url( 'post' ) ) . '">' . qs_ic( 'plus' ) . ' ' . esc_html( qs_t( 'post_ad' ) ) . '</a></div><img src="' . esc_url( QS_URI . '/assets/img/logo-icon.png' ) . '" alt="" class="promo-logo"></div></section>'; // phpcs:ignore
 	}
 }
-/* Other main categories with ads: one row each. */
+/* Other main categories with ads. */
 foreach ( qs_menu_split()[1] as $n ) {
-	$list = array_slice( $latest( $n['term'] ), 0, 5 );
-	if ( $list ) {
-		echo '<section class="wrap sec">' . qs_sec_head( $n['label'], $n['url'], $n['icon'] ) . '<div class="grid g5">' . implode( '', array_map( 'qs_card', $list ) ) . '</div></section>'; // phpcs:ignore
+	if ( $list = $latest( $n['term'] ) ) {
+		echo '<section class="wrap sec">' . qs_sec_head( $n['label'], $n['url'], $n['icon'] ) . qs_ad_rows( $list ) . '</section>'; // phpcs:ignore
 	}
 }
 get_footer();
