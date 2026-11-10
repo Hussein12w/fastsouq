@@ -228,37 +228,26 @@ function qs_card( $id ) {
 	if ( 'wanted' === qs_m( $id, 'deal' ) ) {
 		$badge .= '<span class="b b-k">' . esc_html( qs_t( 'wanted' ) ) . '</span>';
 	}
-	$mm = trim( qs_term_name( $make ) . ' ' . qs_model_label( $id, $model ) );
+	/* Card = photo, price, name, at most two key facts, and the contact buttons. Everything else is on the ad page. */
 	if ( 'vehicle' === $group ) {
 		$attrs = array(
 			( $y = qs_m( $id, 'year' ) ) ? qs_ic( 'cal', 'sm' ) . ' ' . esc_html( $y ) : '',
 			'' !== ( $k = qs_m( $id, 'km' ) ) ? qs_ic( 'gauge', 'sm' ) . ' ' . qs_fmt( $k ) . ' ' . esc_html( qs_t( 'km' ) ) : '',
-			( $g = qs_m( $id, 'gear' ) ) ? qs_ic( 'gear', 'sm' ) . ' ' . esc_html( qs_opt( 'gear', $g ) ) : '',
-			( $sp = qs_m( $id, 'specs' ) ) ? qs_ic( 'globe', 'sm' ) . ' ' . esc_html( qs_opt( 'specs', $sp ) ) : '',
 		);
-		$top   = qs_price( $id );
-		$line2 = esc_html( $mm ?: qs_term_name( $lv[1] ) );
+		$top = qs_price( $id );
 	} elseif ( 'item' === $group || 'general' === $group ) {
-		$attrs = array(
-			( $c = qs_m( $id, 'cond' ) ) ? qs_ic( 'tag', 'sm' ) . ' ' . esc_html( qs_opt( 'item_cond', $c ) ) : '',
-			( $pt = qs_m( $id, 'part_type' ) ) ? qs_ic( 'shield', 'sm' ) . ' ' . esc_html( qs_opt( 'part_type', $pt ) ) : '',
-			$mm ? qs_ic( 'car', 'sm' ) . ' ' . esc_html( $mm ) : '',
-		);
+		$attrs = array( ( $c = qs_m( $id, 'cond' ) ) ? qs_ic( 'tag', 'sm' ) . ' ' . esc_html( qs_opt( 'item_cond', $c ) ) : '' );
 		$top   = qs_price( $id );
-		$line2 = esc_html( qs_term_name( $lv[2] ?: $lv[1] ) );
 	} else {
 		$attrs = array();
 		$top   = '<span class="svc-sec">' . qs_ic( 'wrench', 'sm' ) . ' ' . esc_html( qs_term_name( $lv[1] ) ) . '</span>';
-		$line2 = '';
 	}
-	$attrs = array_slice( array_filter( $attrs ), 0, 3 );
+	$attrs = array_filter( $attrs );
 	$acts  = $phone ? '<div class="c-acts"><a class="btn btn-sm btn-line c-call" href="tel:+' . esc_attr( $phone ) . '" aria-label="' . esc_attr( qs_t( 'call' ) . ' ' . qs_phone_fmt( $phone ) ) . '">' . qs_ic( 'phone' ) . '<span class="c-lbl">' . esc_html( qs_t( 'call' ) ) . '</span></a><a class="btn btn-sm btn-wa" href="' . esc_url( qs_wa_link( $phone, qs_title( $id ) . ' — ' . $url ) ) . '" target="_blank" rel="noopener" aria-label="WhatsApp">' . qs_ic( 'wa' ) . '<span class="c-lbl">' . esc_html( qs_t( 'whatsapp' ) ) . '</span></a></div>' : '';
-	$desc  = wp_trim_words( wp_strip_all_tags( qs_desc( $id ) ), 26, '…' );
 	return '<article class="card dz qs-card g-' . esc_attr( $group ) . ( qs_m( $id, 'featured' ) ? ' is-feat' : '' ) . '"><a class="stretch" href="' . esc_url( $url ) . '" aria-label="' . esc_attr( qs_title( $id ) ) . '"></a>
     <div class="media">' . qs_media( $id ) . '<div class="badges">' . $badge . '</div>' . qs_fav_btn( $id ) . '</div>
     <div class="cbody"><div class="cprice">' . $top . '</div><h3>' . esc_html( qs_title( $id ) ) . '</h3>
-      ' . ( $line2 ? '<div class="csub">' . $line2 . '</div>' : '' ) . ( $desc ? '<p class="cdesc">' . esc_html( $desc ) . '</p>' : '' ) . ( $attrs ? '<div class="cattrs">' . implode( '', array_map( fn( $x ) => '<span>' . $x . '</span>', $attrs ) ) . '</div>' : '' ) . '
-      <div class="cloc"><span>' . qs_ic( 'pin', 'sm' ) . ' ' . esc_html( qs_city_label( $id ) ) . '</span><span class="ago">' . esc_html( qs_ago( $id ) ) . '</span></div>' . $acts . '</div></article>';
+      ' . ( $attrs ? '<div class="cattrs">' . implode( '', array_map( fn( $x ) => '<span>' . $x . '</span>', $attrs ) ) . '</div>' : '' ) . $acts . '</div></article>';
 }
 
 function qs_sec_head( $h, $link = '', $icon = '' ) {

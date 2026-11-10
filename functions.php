@@ -2,7 +2,7 @@
 /** FastSouq theme bootstrap. */
 defined( 'ABSPATH' ) || exit;
 
-define( 'QS_VERSION', '1.2.3' );
+define( 'QS_VERSION', '1.2.4' );
 define( 'QS_TERMS_VERSION', 3 ); // raise when the classification changes
 define( 'QS_DIR', get_template_directory() );
 define( 'QS_URI', get_template_directory_uri() );
