@@ -19,13 +19,9 @@ if ( ! $slides && get_theme_mod( 'qs_hero' ) ) {
 	$slides[] = array( 'img' => get_theme_mod( 'qs_hero' ), 'link' => '' );
 }
 $nav = qs_nav();
-/* Up to 10 ads in rows of 5 (on phones each row slides sideways). */
+/* Up to 10 ads: 5 per row on laptops / desktops, 2 per row on phones. */
 function qs_ad_rows( $ids ) {
-	$h = '<div class="ad-rows">';
-	foreach ( array_chunk( array_slice( $ids, 0, 10 ), 5 ) as $row ) {
-		$h .= '<div class="grid g5 ad-row">' . implode( '', array_map( 'qs_card', $row ) ) . '</div>';
-	}
-	return $h . '</div>';
+	return '<div class="grid g5 ad-grid">' . implode( '', array_map( 'qs_card', array_slice( $ids, 0, 10 ) ) ) . '</div>';
 }
 ?>
 <section class="hs" data-hs>

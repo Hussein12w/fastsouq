@@ -420,15 +420,8 @@ html,body{overflow-x:clip}
 @media (max-width:1000px){.type-grid.mains{grid-template-columns:repeat(4,1fr)}}
 @media (max-width:600px){.type-grid.mains{grid-template-columns:repeat(3,1fr);gap:8px}.type-grid.mains b{font-size:12px}}
 
-/* Home: up to 10 ads per category in rows of 5; on phones and tablets each row slides sideways */
-.ad-row+.ad-row{margin-top:14px}
-@media (max-width:1000px){
-  .ad-rows .ad-row{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;gap:10px;margin-inline:-16px;padding:2px 16px 6px;scroll-padding-inline:16px}
-  .ad-rows .ad-row::-webkit-scrollbar{display:none}
-  .ad-rows .ad-row>.card{flex:0 0 calc((100% - 10px)/2.15);scroll-snap-align:start}
-  .ad-row+.ad-row{margin-top:10px}
-}
-@media (min-width:601px) and (max-width:1000px){.ad-rows .ad-row>.card{flex-basis:calc((100% - 20px)/3.2)}}
+/* Home: up to 10 ads per category — 5 per row on laptops, 2 per row on phones and tablets */
+@media (max-width:1000px){.grid.g5.ad-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:860px){.c-acts .btn{height:34px;font-size:12.5px;gap:4px;padding:0 4px}.c-acts .btn .ic{width:16px;height:16px}}
 @media (max-width:350px){.c-acts .c-lbl{display:none}}
 /* 5 per row on laptops and desktops */
