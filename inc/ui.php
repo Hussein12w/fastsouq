@@ -57,19 +57,27 @@ function qs_children( $parent, $tax = 'qs_cat' ) {
 	static $c = array();
 	$key = $tax . ( $p ? $p->term_id : 0 ) . qs_lang();
 	if ( ! isset( $c[ $key ] ) ) {
-		if ( 'qs_cat' === $tax ) {
-			/* Categories: alphabetical in the current language (Arabic أ–ي, English A–Z). */
-			$t = get_terms( array( 'taxonomy' => $tax, 'parent' => $p ? $p->term_id : 0, 'hide_empty' => false ) );
-			$t = is_wp_error( $t ) ? array() : qs_sort_terms( $t );
-		} else {
-			$t = get_terms( array( 'taxonomy' => $tax, 'parent' => $p ? $p->term_id : 0, 'hide_empty' => false, 'meta_key' => 'sort', 'orderby' => 'meta_value_num' ) );
-			if ( is_wp_error( $t ) || ! $t ) {
-				$t = get_terms( array( 'taxonomy' => $tax, 'parent' => $p ? $p->term_id : 0, 'hide_empty' => false, 'orderby' => 'name' ) );
-			}
+		/* Alphabetical in the current language (Arabic أ–ي, English A–Z); "Other" (أخرى) always last. */
+		$t = get_terms( array( 'taxonomy' => $tax, 'parent' => $p ? $p->term_id : 0, 'hide_empty' => false ) );
+		$t = is_wp_error( $t ) ? array() : qs_sort_terms( $t );
+		if ( 'qs_make' === $tax ) {
+			$other = array_filter( $t, 'qs_is_other' );
+			$t     = array_merge( array_diff_key( $t, $other ), $other );
 		}
 		$c[ $key ] = is_wp_error( $t ) ? array() : $t;
 	}
 	return $c[ $key ];
+}
+/** The "Other" make / model (أخرى). */
+function qs_is_other( $t ) {
+	return $t && ( 'other' === $t->slug || '-other' === substr( $t->slug, -6 ) ) && 'Other' === $t->name;
+}
+/** Model name shown on an ad: the name the advertiser typed when they picked "Other". */
+function qs_model_label( $id, $model ) {
+	if ( ! $model ) {
+		return '';
+	}
+	return qs_is_other( $model ) && ( $typed = qs_m( $id, 'model_other' ) ) ? $typed : qs_term_name( $model );
 }
 /** Alphabetical order by the name shown in the current language. */
 function qs_sort_terms( $terms ) {
@@ -220,7 +228,7 @@ function qs_card( $id ) {
 	if ( 'wanted' === qs_m( $id, 'deal' ) ) {
 		$badge .= '<span class="b b-k">' . esc_html( qs_t( 'wanted' ) ) . '</span>';
 	}
-	$mm = trim( qs_term_name( $make ) . ' ' . qs_term_name( $model ) );
+	$mm = trim( qs_term_name( $make ) . ' ' . qs_model_label( $id, $model ) );
 	if ( 'vehicle' === $group ) {
 		$attrs = array(
 			( $y = qs_m( $id, 'year' ) ) ? qs_ic( 'cal', 'sm' ) . ' ' . esc_html( $y ) : '',

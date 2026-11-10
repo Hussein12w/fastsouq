@@ -13,6 +13,7 @@ function qs_fields() {
 		'deal'      => array( 'deal', 'chips:deal', 'vehicle', '' ),
 		'make'      => array( 'make', 'make', 'vehicle item', '' ),
 		'model'     => array( 'model', 'model', 'vehicle item', '' ),
+		'model_other' => array( 'model_name', 'text', 'vehicle item', '' ),
 		'year'      => array( 'year', 'select:years', 'vehicle item', '' ),
 		'body'      => array( 'body', 'body', 'vehicle', '' ),
 		'cond'      => array( 'condition', 'chips:cond', 'vehicle item general', 'vehicle item' ),
@@ -37,6 +38,7 @@ function qs_field_label( $key, $group ) {
 		'itype' => array( 'general' => 'cat_detail' ),
 		'make'  => array( 'item' => 'compat_make' ),
 		'model' => array( 'item' => 'compat_model' ),
+		'model_other' => array( 'item' => 'compat_model_name' ),
 		'year'  => array( 'item' => 'compat_year' ),
 	);
 	return $map[ $key ][ $group ] ?? qs_fields()[ $key ][0];
@@ -72,8 +74,8 @@ function qs_post_values( $id ) {
 	$lv = qs_levels( $id );
 	list( $make, $model ) = qs_make_model( $id );
 	$sec = $lv[0] ? $lv[0]->slug : '';
-	$v   = array( 'main' => isset( qs_sections()[ $sec ] ) ? 'cars' : $sec, 'section' => $sec, 'sub' => $lv[1] ? $lv[1]->slug : '', 'itype' => $lv[2] ? $lv[2]->slug : '', 'title' => $p->post_title, 'desc' => $p->post_content, 'make' => $make ? $make->slug : '', 'model' => $model ? $model->name : '' );
-	foreach ( array( 'deal', 'year', 'body', 'cond', 'km', 'gear', 'fuel', 'cyl', 'specs', 'color', 'brand', 'part_type', 'sku', 'price', 'period', 'area', 'lat', 'lng', 'phone', 'title_en' ) as $k ) {
+	$v   = array( 'main' => isset( qs_sections()[ $sec ] ) ? 'cars' : $sec, 'section' => $sec, 'sub' => $lv[1] ? $lv[1]->slug : '', 'itype' => $lv[2] ? $lv[2]->slug : '', 'title' => $p->post_title, 'desc' => $p->post_content, 'make' => $make ? $make->slug : '', 'model' => $model ? $model->slug : '' );
+	foreach ( array( 'deal', 'year', 'body', 'cond', 'km', 'gear', 'fuel', 'cyl', 'specs', 'color', 'brand', 'part_type', 'sku', 'price', 'period', 'area', 'lat', 'lng', 'phone', 'title_en', 'model_other' ) as $k ) {
 		$v[ $k ] = qs_m( $id, $k );
 	}
 	$c = get_the_terms( $id, 'qs_city' );
@@ -230,27 +232,17 @@ function qs_handle_post_ad() {
 		$cats[] = $itype->term_id;
 	}
 	wp_set_object_terms( $id, $cats, 'qs_cat' );
-	/* Make → model (a new model name is added under its make automatically). */
-	$mm   = array();
-	$make = ! empty( $v['make'] ) ? qs_term( $v['make'], 'qs_make' ) : null;
+	/* Make → model (picked from the list; "Other" + the typed name when the model is not listed). */
+	$mm    = array();
+	$other = '';
+	$make  = ! empty( $v['make'] ) ? qs_term( $v['make'], 'qs_make' ) : null;
 	if ( $make && ! $make->parent ) {
-		$mm[] = $make->term_id;
-		if ( ! empty( $v['model'] ) ) {
-			$name = mb_substr( trim( $v['model'] ), 0, 60 );
-			foreach ( qs_children( $make, 'qs_make' ) as $kid ) { // typed in the other language → same model
-				if ( in_array( $name, array( qs_make_ar( $kid->name ), get_term_meta( $kid->term_id, 'name_ar', true ), get_term_meta( $kid->term_id, 'name_en', true ) ), true ) ) {
-					$name = $kid->name;
-					break;
-				}
-			}
-			$found = get_terms( array( 'taxonomy' => 'qs_make', 'parent' => $make->term_id, 'name' => $name, 'hide_empty' => false ) );
-			if ( $found && ! is_wp_error( $found ) ) {
-				$mm[] = $found[0]->term_id;
-			} else {
-				$r = wp_insert_term( $name, 'qs_make', array( 'parent' => $make->term_id, 'slug' => sanitize_title( $make->slug . '-' . $name ) ) );
-				if ( ! is_wp_error( $r ) ) {
-					$mm[] = $r['term_id'];
-				}
+		$mm[]  = $make->term_id;
+		$model = ! empty( $v['model'] ) ? qs_term( $v['model'], 'qs_make' ) : null;
+		if ( $model && (int) $model->parent === (int) $make->term_id ) {
+			$mm[] = $model->term_id;
+			if ( qs_is_other( $model ) ) {
+				$other = mb_substr( trim( (string) ( $v['model_other'] ?? '' ) ), 0, 60 );
 			}
 		}
 	}
@@ -259,6 +251,7 @@ function qs_handle_post_ad() {
 	$lat  = qs_req( 'lat' );
 	$lng  = qs_req( 'lng' );
 	$meta = array( 'group' => $group, 'area' => qs_req( 'area' ), 'lat' => is_numeric( $lat ) ? round( (float) $lat, 6 ) : '', 'lng' => is_numeric( $lng ) ? round( (float) $lng, 6 ) : '', 'phone' => $phone, 'title_en' => qs_req( 'title_en' ) );
+	$meta['model_other'] = $other;
 	foreach ( array( 'deal', 'year', 'body', 'cond', 'km', 'gear', 'fuel', 'cyl', 'specs', 'color', 'brand', 'part_type', 'sku', 'price', 'period' ) as $k ) {
 		$val = $v[ $k ] ?? '';
 		if ( in_array( $k, array( 'price', 'km', 'year' ), true ) ) {

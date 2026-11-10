@@ -192,8 +192,13 @@
       if (el.dataset.gHidden) return;
       var show = (' ' + el.dataset.subs + ' ').indexOf(' ' + sv + ' ') > -1; el.hidden = !show; $$('input', el).forEach(function (i) { i.disabled = !show; });
     });
-    var mk = liveField(form, 'make'), dl = $('#qs-models'), data = $('#qs-models-data');
-    if (dl && data) { var m = JSON.parse(data.textContent || '{}')[mk ? mk.value : ''] || []; dl.innerHTML = m.map(function (x) { return '<option value="' + String(x).replace(/"/g, '&quot;') + '">'; }).join(''); }
+    /* "Other" model: show the box for typing the model name */
+    $$('[data-if-other]', form).forEach(function (el) {
+      if (el.dataset.gHidden === '1') return;
+      var g = el.dataset.g, sel = $$('select[name=model]', form).filter(function (x) { var w = x.closest('[data-g]'); return w && w.dataset.g === g; })[0];
+      var on = !!(sel && !sel.disabled && sel.selectedOptions[0] && sel.selectedOptions[0].hasAttribute('data-other'));
+      el.hidden = !on; $$('input', el).forEach(function (i) { i.disabled = !on; });
+    });
   }
   /* Post form: show the fields of the chosen section / group */
   function postForm(f) {

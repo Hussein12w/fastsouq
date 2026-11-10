@@ -2,8 +2,8 @@
 /** FastSouq theme bootstrap. */
 defined( 'ABSPATH' ) || exit;
 
-define( 'QS_VERSION', '1.2.0' );
-define( 'QS_TERMS_VERSION', 2 ); // raise when the classification changes
+define( 'QS_VERSION', '1.2.1' );
+define( 'QS_TERMS_VERSION', 3 ); // raise when the classification changes
 define( 'QS_DIR', get_template_directory() );
 define( 'QS_URI', get_template_directory_uri() );
 

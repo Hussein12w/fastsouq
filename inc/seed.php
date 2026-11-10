@@ -73,6 +73,11 @@ function qs_seed_terms() {
 			}
 		}
 	}
+	/* "Other" (أخرى): a make for makes not in the list, and a model under every make. */
+	qs_seed_term( 'qs_make', 'other', 'Other', 'Other', 9999, 0, array( 'name_ar' => 'أخرى', 'origin' => 'أخرى|Other' ) );
+	foreach ( get_terms( array( 'taxonomy' => 'qs_make', 'parent' => 0, 'hide_empty' => false ) ) as $mk ) {
+		qs_make_other_model( $mk );
+	}
 	$i = 0;
 	foreach ( qs_cities() as $key => $cities ) {
 		list( $s, $ar, $en ) = explode( '|', $key );
@@ -85,6 +90,20 @@ function qs_seed_terms() {
 	update_option( 'qs_terms_version', QS_TERMS_VERSION );
 	clean_term_cache( array(), 'qs_cat' );
 }
+
+function qs_make_other_model( $make ) {
+	return qs_seed_term( 'qs_make', $make->slug . '-other', 'Other', 'Other', 9999, $make->term_id, array( 'name_ar' => 'أخرى' ) );
+}
+/* A make added later from the dashboard gets its "Other" model too. */
+add_action(
+	'created_qs_make',
+	function ( $id ) {
+		$t = get_term( $id, 'qs_make' );
+		if ( $t && ! is_wp_error( $t ) && ! $t->parent ) {
+			qs_make_other_model( $t );
+		}
+	}
+);
 
 /* ---------- Demo ads ---------- */
 function qs_demo_ads() {

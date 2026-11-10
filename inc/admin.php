@@ -176,7 +176,7 @@ foreach ( array( 'qs_cat', 'qs_city', 'qs_make' ) as $tax ) {
 				}
 				echo '</select><p class="description">تظهر 6 فئات رئيسية فقط في القائمة العلوية بالترتيب من 1 إلى 6، والباقي تحت «المزيد». إذا اخترت رقماً مستخدماً لفئة أخرى، تنتقل تلك الفئة إلى «المزيد».</p></td></tr>';
 			}
-			foreach ( array( 'name_ar' => 'الاسم بالعربي', 'name_en' => 'Name (English)' ) + ( 'qs_cat' === $tax ? array() : array( 'sort' => 'الترتيب' ) ) as $k => $l ) {
+			foreach ( array( 'name_ar' => 'الاسم بالعربي', 'name_en' => 'Name (English)' ) as $k => $l ) {
 				echo '<tr class="form-field"><th><label>' . esc_html( $l ) . '</label></th><td><input name="qs_t[' . esc_attr( $k ) . ']" value="' . esc_attr( get_term_meta( $term->term_id, $k, true ) ) . '" dir="' . ( 'name_ar' === $k ? 'rtl' : 'ltr' ) . '"></td></tr>';
 			}
 		}
@@ -184,7 +184,7 @@ foreach ( array( 'qs_cat', 'qs_city', 'qs_make' ) as $tax ) {
 	add_action(
 		$tax . '_add_form_fields',
 		function () use ( $tax ) {
-			foreach ( array( 'name_ar' => 'الاسم بالعربي', 'name_en' => 'Name (English)' ) + ( 'qs_cat' === $tax ? array() : array( 'sort' => 'الترتيب' ) ) as $k => $l ) {
+			foreach ( array( 'name_ar' => 'الاسم بالعربي', 'name_en' => 'Name (English)' ) as $k => $l ) {
 				echo '<div class="form-field"><label>' . esc_html( $l ) . '</label><input name="qs_t[' . esc_attr( $k ) . ']" dir="' . ( 'name_ar' === $k ? 'rtl' : 'ltr' ) . '"></div>';
 			}
 		}

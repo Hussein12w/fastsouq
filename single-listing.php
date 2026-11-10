@@ -25,7 +25,7 @@ $add  = function ( $label, $val ) use ( &$rows ) {
 $add( qs_t( 'subsection' ), qs_term_name( $lv[1] ) );
 if ( 'vehicle' === $group ) {
 	$add( qs_t( 'make' ), $make ? qs_term_name( $make ) : '' );
-	$add( qs_t( 'model' ), $model ? qs_term_name( $model ) : '' );
+	$add( qs_t( 'model' ), qs_model_label( $id, $model ) );
 	$add( qs_t( 'year' ), qs_m( $id, 'year' ) );
 	$body = qs_m( $id, 'body' );
 	if ( $body ) {
@@ -50,7 +50,7 @@ if ( 'vehicle' === $group ) {
 	$add( qs_t( 'item_type' ), qs_term_name( $lv[2] ) );
 	$add( qs_t( 'part_brand' ), qs_m( $id, 'brand' ) );
 	$add( qs_t( 'compat_make' ), $make ? qs_term_name( $make ) : '' );
-	$add( qs_t( 'compat_model' ), $model ? qs_term_name( $model ) : '' );
+	$add( qs_t( 'compat_model' ), qs_model_label( $id, $model ) );
 	$add( qs_t( 'compat_year' ), qs_m( $id, 'year' ) );
 	$add( qs_t( 'condition' ), qs_m( $id, 'cond' ) ? qs_opt( 'item_cond', qs_m( $id, 'cond' ) ) : '' );
 	$add( qs_t( 'part_type' ), qs_m( $id, 'part_type' ) ? qs_opt( 'part_type', qs_m( $id, 'part_type' ) ) : '' );

@@ -33,11 +33,6 @@ $v       = fn( $k ) => $val[ $k ] ?? '';
 $req     = '<em class="req">' . esc_html( qs_t( 'required' ) ) . '</em>';
 $head( $edit ? qs_t( 'edit' ) . ' — ' . qs_title( $edit ) : qs_t( 'post_title' ) );
 
-/* Models for the make → model suggestions. */
-$models = array();
-foreach ( qs_children( 0, 'qs_make' ) as $mk ) {
-	$models[ $mk->slug ] = array_map( 'qs_term_name', qs_children( $mk, 'qs_make' ) );
-}
 
 /* One field for one group. */
 $field = function ( $k, $f, $g ) use ( $v, $req, $secs ) {
@@ -49,6 +44,9 @@ $field = function ( $k, $f, $g ) use ( $v, $req, $secs ) {
 	list( $kind, $src ) = array_pad( explode( ':', $f[1] ), 2, '' );
 	if ( 'period' === $k ) {
 		$attr .= ' data-subs="cars-for-rent"';
+	}
+	if ( 'model_other' === $k ) {
+		$attr .= ' data-if-other';
 	}
 	if ( 'chips' === $kind ) {
 		$h = '<div class="fld' . $full . '"' . $attr . '>' . $label . '<div class="chips">';
@@ -69,8 +67,13 @@ $field = function ( $k, $f, $g ) use ( $v, $req, $secs ) {
 		}
 		$h .= '</select>';
 	} elseif ( 'model' === $kind ) {
-		$shown = ( 'ar' === qs_lang() && qs_make_ar( $cur ) ) ? qs_make_ar( $cur ) : $cur;
-		$h    .= '<input name="model" list="qs-models" autocomplete="off" value="' . esc_attr( $shown ) . '">';
+		$h .= '<select name="model" data-dep="make"><option value="">' . esc_html( qs_t( 'pick' ) ) . '</option>';
+		foreach ( qs_children( 0, 'qs_make' ) as $mk ) {
+			foreach ( qs_children( $mk, 'qs_make' ) as $md ) {
+				$h .= '<option value="' . esc_attr( $md->slug ) . '" data-p="' . esc_attr( $mk->slug ) . '"' . ( qs_is_other( $md ) ? ' data-other' : '' ) . selected( $cur, $md->slug, false ) . '>' . esc_html( qs_term_name( $md ) ) . '</option>';
+			}
+		}
+		$h .= '</select>';
 	} elseif ( 'body' === $kind ) {
 		$h  = '<label class="fld"' . $attr . ' data-hide-empty>' . $label . '<select name="body" data-dep="sub"><option value="">' . esc_html( qs_t( 'pick' ) ) . '</option>';
 		foreach ( qs_body_options() as $sub => $list ) {
@@ -108,7 +111,6 @@ $field = function ( $k, $f, $g ) use ( $v, $req, $secs ) {
 	<?php echo qs_notice(); // phpcs:ignore ?>
 	<form class="post-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" novalidate data-postform>
 		<input type="hidden" name="action" value="qs_post_ad"><?php wp_nonce_field( 'qs_post_ad', '_qsn' ); ?><input type="hidden" name="edit" value="<?php echo (int) $edit; ?>">
-		<script type="application/json" id="qs-models-data"><?php echo wp_json_encode( $models ); ?></script><datalist id="qs-models"></datalist>
 
 		<div class="post-card"><h2><span class="step-n">1</span> <?php qs_e( 'choose_section' ); ?></h2>
 			<div class="type-grid mains">
@@ -118,7 +120,7 @@ $field = function ( $k, $f, $g ) use ( $v, $req, $secs ) {
 			</div>
 			<div class="car-secs" data-car-secs<?php echo 'cars' === $main ? '' : ' hidden'; ?>><h3><?php qs_e( 'choose_car_sec' ); ?></h3>
 			<div class="type-grid five">
-				<?php foreach ( qs_sections() as $slug => $x ) : $t = qs_term( $slug ); if ( ! $t ) { continue; } ?>
+				<?php foreach ( qs_children( 'cars' ) as $t ) : $slug = $t->slug; $x = qs_sections()[ $slug ] ?? null; if ( ! $x ) { continue; } ?>
 				<label class="type-card sec-card<?php echo $section === $slug ? ' on' : ''; ?>"><input type="radio" name="section" value="<?php echo esc_attr( $slug ); ?>" data-group="<?php echo esc_attr( $x[2] ); ?>"<?php checked( $section, $slug ); ?> hidden><span class="sc-ic"><?php echo qs_ic( $x[1] ); ?></span><b><?php echo esc_html( qs_term_name( $t ) ); ?></b><small><?php qs_e( 'd_' . str_replace( '-', '_', $slug ) ); ?></small><i class="tc-check"><?php echo qs_ic( 'check' ); ?></i></label>
 				<?php endforeach; ?>
 			</div></div>

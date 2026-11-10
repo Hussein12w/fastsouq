@@ -91,6 +91,8 @@ function qs_dict() {
 		'site_name' => array( 'فاست سوق', 'FastSouq' ),
 		'tagline' => array( 'سوق الإعلانات المبوبة في الإمارات: سيارات، عقارات، وظائف وكل شيء', 'The UAE classifieds marketplace: cars, property, jobs and everything else' ),
 		'more' => array( 'المزيد', 'More' ),
+		'model_name' => array( 'اكتب اسم الموديل', 'Type the model name' ),
+		'compat_model_name' => array( 'اكتب اسم الموديل المتوافق', 'Type the compatible model' ),
 		'browse_cats' => array( 'تصفّح الفئات', 'Browse categories' ),
 		'post_in' => array( 'أضف إعلانك في {c}', 'Post an ad in {c}' ),
 		'choose_car_sec' => array( 'اختر نوع الإعلان في السيارات', 'What are you posting in Cars?' ),
