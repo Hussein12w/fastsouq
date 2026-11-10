@@ -77,7 +77,7 @@ function qs_terms_box( $post ) {
 		$walk( 0, 0 );
 		echo '</select></p>';
 	};
-	$sel( 'qs_cat', 'qs_cat', 'القسم (اختر أدق مستوى)', 3 );
+	$sel( 'qs_cat', 'qs_cat', 'القسم (اختر أدق مستوى)', 4 );
 	$sel( 'qs_make', 'qs_make', 'الماركة / الموديل', 2 );
 	$sel( 'qs_city', 'qs_city', 'الإمارة / المدينة', 2 );
 }
@@ -163,20 +163,28 @@ add_action(
 	99
 );
 
-/* Arabic / English names + order on sections, cities, makes and models. */
+/* Arabic / English names on sections, cities, makes and models; menu place of the main categories (categories are listed alphabetically). */
 foreach ( array( 'qs_cat', 'qs_city', 'qs_make' ) as $tax ) {
 	add_action(
 		$tax . '_edit_form_fields',
-		function ( $term ) {
-			foreach ( array( 'name_ar' => 'الاسم بالعربي', 'name_en' => 'Name (English)', 'sort' => 'الترتيب' ) as $k => $l ) {
+		function ( $term ) use ( $tax ) {
+			if ( 'qs_cat' === $term->taxonomy && ! $term->parent ) {
+				$pos = (int) get_term_meta( $term->term_id, 'menu', true );
+				echo '<tr class="form-field"><th><label>مكانها في القائمة العلوية</label></th><td><select name="qs_t[menu]"><option value="0"' . selected( $pos, 0, false ) . '>تحت «المزيد»</option>';
+				for ( $i = 1; $i <= 6; $i++ ) {
+					echo '<option value="' . $i . '"' . selected( $pos, $i, false ) . '>' . $i . '</option>';
+				}
+				echo '</select><p class="description">تظهر 6 فئات رئيسية فقط في القائمة العلوية بالترتيب من 1 إلى 6، والباقي تحت «المزيد». إذا اخترت رقماً مستخدماً لفئة أخرى، تنتقل تلك الفئة إلى «المزيد».</p></td></tr>';
+			}
+			foreach ( array( 'name_ar' => 'الاسم بالعربي', 'name_en' => 'Name (English)' ) + ( 'qs_cat' === $tax ? array() : array( 'sort' => 'الترتيب' ) ) as $k => $l ) {
 				echo '<tr class="form-field"><th><label>' . esc_html( $l ) . '</label></th><td><input name="qs_t[' . esc_attr( $k ) . ']" value="' . esc_attr( get_term_meta( $term->term_id, $k, true ) ) . '" dir="' . ( 'name_ar' === $k ? 'rtl' : 'ltr' ) . '"></td></tr>';
 			}
 		}
 	);
 	add_action(
 		$tax . '_add_form_fields',
-		function () {
-			foreach ( array( 'name_ar' => 'الاسم بالعربي', 'name_en' => 'Name (English)', 'sort' => 'الترتيب' ) as $k => $l ) {
+		function () use ( $tax ) {
+			foreach ( array( 'name_ar' => 'الاسم بالعربي', 'name_en' => 'Name (English)' ) + ( 'qs_cat' === $tax ? array() : array( 'sort' => 'الترتيب' ) ) as $k => $l ) {
 				echo '<div class="form-field"><label>' . esc_html( $l ) . '</label><input name="qs_t[' . esc_attr( $k ) . ']" dir="' . ( 'name_ar' === $k ? 'rtl' : 'ltr' ) . '"></div>';
 			}
 		}
@@ -184,7 +192,15 @@ foreach ( array( 'qs_cat', 'qs_city', 'qs_make' ) as $tax ) {
 	$save = function ( $term_id ) {
 		if ( current_user_can( 'manage_categories' ) && ! empty( $_POST['qs_t'] ) ) {
 			foreach ( (array) wp_unslash( $_POST['qs_t'] ) as $k => $v ) {
-				if ( in_array( $k, array( 'name_ar', 'name_en', 'sort' ), true ) ) {
+				if ( 'menu' === $k ) {
+					$pos = min( 6, absint( $v ) );
+					if ( $pos ) { // one category per place
+						foreach ( get_terms( array( 'taxonomy' => 'qs_cat', 'parent' => 0, 'hide_empty' => false, 'exclude' => array( $term_id ), 'meta_key' => 'menu', 'meta_value' => $pos ) ) as $other ) {
+							update_term_meta( $other->term_id, 'menu', 0 );
+						}
+					}
+					update_term_meta( $term_id, 'menu', $pos );
+				} elseif ( in_array( $k, array( 'name_ar', 'name_en', 'sort' ), true ) ) {
 					update_term_meta( $term_id, $k, sanitize_text_field( $v ) );
 				}
 			}

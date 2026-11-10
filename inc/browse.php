@@ -61,7 +61,11 @@ function qs_browse( $o ) {
 
 	echo '<section class="page-head"><div class="wrap head-flex"><div>' . qs_crumbs( $o['crumbs'] ) . '<h1>' . ( $o['icon'] ? '<span class="h-ic">' . qs_ic( $o['icon'] ) . '</span>' : '' ) . esc_html( $o['title'] ) . ' <small class="muted cnt">' . esc_html( $found . ' ' . qs_t( 'results' ) ) . '</small></h1></div><a class="btn btn-y" href="' . esc_url( qs_page_url( 'post', $sec ? array( 'section' => $sec->slug ) : array() ) ) . '">' . qs_ic( 'plus' ) . ' ' . esc_html( qs_t( 'post_ad' ) ) . '</a></div>' . ( $o['chips'] ? '<div class="wrap">' . $o['chips'] . '</div>' : '' ) . '</section>'; // phpcs:ignore
 	?>
-	<div class="wrap browse">
+	<?php
+	$view = qs_view();
+	$side = qs_sponsored( 'cat_side', $o['sub'] ?: $sec );
+	?>
+	<div class="wrap browse<?php echo $side ? ' has-side' : ''; ?>">
 	<form class="filters" id="filters" method="get" action="<?php echo esc_url( $base ); ?>" data-autosubmit>
 		<?php foreach ( $o['keep'] as $k => $v ) { echo '<input type="hidden" name="' . esc_attr( $k ) . '" value="' . esc_attr( $v ) . '">'; } ?>
 		<div class="flt-h"><b><?php echo qs_ic( 'filter' ) . ' '; qs_e( 'filters' ); ?></b><a class="link" href="<?php echo esc_url( add_query_arg( $o['keep'], $base ) ); ?>"><?php qs_e( 'reset' ); ?></a></div>
@@ -86,6 +90,16 @@ function qs_browse( $o ) {
 				$h .= $grp( 'body', $b . '</select>' );
 			}
 			$h .= $grp( 'condition', $opt( 'cond', 'cond', qs_t( 'any' ) ) ) . $grp( 'kms', $range( 'kmin', 'kmax', qs_t( 'km_from' ), qs_t( 'km_to' ) ) ) . $grp( 'gear', $chips( 'gear', 'gear' ) ) . $grp( 'fuel', $opt( 'fuel', 'fuel', qs_t( 'any' ) ) ) . $grp( 'cyl', $opt( 'cyl', 'cyl', qs_t( 'any' ) ) ) . $grp( 'specs', $opt( 'specs', 'specs', qs_t( 'any' ) ) ) . $grp( 'color', $opt( 'color', 'color', qs_t( 'any' ) ) );
+		} elseif ( 'general' === $group ) {
+			$sub_slug = $o['sub'] ? $o['sub']->slug : qs_f( 'cat' );
+			if ( $sub_slug && ( $st = qs_term( $sub_slug ) ) && qs_children( $st ) ) {
+				$it = '<select name="itype"><option value="">' . esc_html( qs_t( 'all' ) ) . '</option>';
+				foreach ( qs_children( $st ) as $c ) {
+					$it .= '<option value="' . esc_attr( $c->slug ) . '"' . selected( qs_f( 'itype' ), $c->slug, false ) . '>' . esc_html( qs_term_name( $c ) ) . '</option>';
+				}
+				$h .= $grp( 'cat_detail', $it . '</select>' );
+			}
+			$h .= $grp( 'price', $range( 'pmin', 'pmax', qs_t( 'price_min' ), qs_t( 'price_max' ) ) ) . $grp( 'condition', $chips( 'cond', 'item_cond' ) );
 		} elseif ( 'item' === $group ) {
 			$sub_slug = $o['sub'] ? $o['sub']->slug : qs_f( 'cat' );
 			if ( $sub_slug && ( $st = qs_term( $sub_slug ) ) && qs_children( $st ) ) {
@@ -104,21 +118,33 @@ function qs_browse( $o ) {
 		<button class="btn btn-y full" type="submit"><?php qs_e( 'apply' ); ?></button>
 	</form>
 	<div class="results"><div class="res-bar"><button class="btn btn-line only-m" type="button" data-act="toggle-filters"><?php echo qs_ic( 'filter' ) . ' '; qs_e( 'show_filters' ); ?></button><span class="muted"><?php echo esc_html( $found . ' ' . qs_t( 'results' ) ); ?></span>
+		<div class="view-tg" role="group" aria-label="<?php echo esc_attr( qs_t( 'view_as' ) ); ?>"><button type="button" data-act="view" data-v="list" class="<?php echo 'list' === $view ? 'on' : ''; ?>" aria-label="<?php echo esc_attr( qs_t( 'view_list' ) ); ?>" title="<?php echo esc_attr( qs_t( 'view_list' ) ); ?>"><?php echo qs_ic( 'list' ); ?></button><button type="button" data-act="view" data-v="grid" class="<?php echo 'grid' === $view ? 'on' : ''; ?>" aria-label="<?php echo esc_attr( qs_t( 'view_grid' ) ); ?>" title="<?php echo esc_attr( qs_t( 'view_grid' ) ); ?>"><?php echo qs_ic( 'grid' ); ?></button></div>
 		<label class="sort"><?php qs_e( 'sort' ); ?><select name="sort" form="filters"><option value=""><?php qs_e( 'newest' ); ?></option><option value="asc"<?php selected( qs_f( 'sort' ), 'asc' ); ?>><?php qs_e( 'price_low' ); ?></option><option value="desc"<?php selected( qs_f( 'sort' ), 'desc' ); ?>><?php qs_e( 'price_high' ); ?></option></select></label></div>
 		<?php
 		if ( have_posts() ) {
-			echo '<div class="grid g3">';
+			echo '<div class="grid g3 res-box' . ( 'list' === $view ? ' is-list' : '' ) . '" data-view-box>';
+			$i = 0;
 			while ( have_posts() ) {
 				the_post();
 				echo qs_card( get_the_ID() ); // phpcs:ignore
+				if ( 4 === ++$i && ( $b = qs_sponsored( 'cat_list', $o['sub'] ?: $sec ) ) ) {
+					echo '<div class="spons-row">' . $b . '</div>'; // phpcs:ignore
+				}
 			}
 			echo '</div>' . qs_pagination(); // phpcs:ignore
 		} else {
 			echo qs_empty( 'search', '', '<a class="btn btn-line" href="' . esc_url( add_query_arg( $o['keep'], $base ) ) . '">' . esc_html( qs_t( 'reset' ) ) . '</a>' ); // phpcs:ignore
 		}
 		?>
-	</div></div>
+	</div>
+	<?php if ( $side ) : ?><aside class="b-side"><?php echo $side; // phpcs:ignore ?></aside><?php endif; ?>
+	</div>
 	<?php
+}
+/** Results layout: "list" (default) or "grid", remembered in a cookie. */
+function qs_view() {
+	$v = isset( $_COOKIE['qs_view'] ) ? sanitize_key( $_COOKIE['qs_view'] ) : '';
+	return 'grid' === $v ? 'grid' : 'list';
 }
 
 /** Chips of the children of a term (sub-sections or item types). */

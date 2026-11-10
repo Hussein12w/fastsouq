@@ -1,65 +1,80 @@
 <?php
-/** Home: hero with sections, vehicle types, makes, featured ads, latest per section. */
+/** Home: photo slider, main categories slider, sponsored banners, latest ads of each main category (5 per row). */
 defined( 'ABSPATH' ) || exit;
 get_header();
-$ids = function ( $args ) {
-	return get_posts( array_merge( array( 'post_type' => 'listing', 'fields' => 'ids', 'no_found_rows' => true, 'posts_per_page' => 6, 'meta_query' => array( 'feat' => array( 'key' => '_qs_featured', 'type' => 'NUMERIC' ), 'bump' => array( 'key' => '_qs_bump', 'type' => 'NUMERIC' ) ), 'orderby' => array( 'feat' => 'DESC', 'bump' => 'DESC' ) ), $args ) );
+$latest = function ( $term ) {
+	return get_posts( array( 'post_type' => 'listing', 'fields' => 'ids', 'no_found_rows' => true, 'posts_per_page' => 10, 'tax_query' => array( array( 'taxonomy' => 'qs_cat', 'terms' => $term->term_id ) ), 'meta_query' => array( 'feat' => array( 'key' => '_qs_featured', 'type' => 'NUMERIC' ), 'bump' => array( 'key' => '_qs_bump', 'type' => 'NUMERIC' ) ), 'orderby' => array( 'feat' => 'DESC', 'bump' => 'DESC' ) ) );
 };
 $count = function ( $t ) {
 	$q = new WP_Query( array( 'post_type' => 'listing', 'fields' => 'ids', 'posts_per_page' => 1, 'tax_query' => array( array( 'taxonomy' => 'qs_cat', 'terms' => $t->term_id ) ) ) );
 	return (int) $q->found_posts;
 };
-$featured = get_posts( array( 'post_type' => 'listing', 'fields' => 'ids', 'posts_per_page' => 6, 'no_found_rows' => true, 'meta_query' => array( array( 'key' => '_qs_featured', 'value' => 1, 'type' => 'NUMERIC' ), 'bump' => array( 'key' => '_qs_bump', 'type' => 'NUMERIC' ) ), 'orderby' => array( 'bump' => 'DESC' ) ) );
-$makes    = array_filter( qs_children( 0, 'qs_make' ), fn( $m ) => $m->count > 0 );
-usort( $makes, fn( $a, $b ) => $b->count <=> $a->count );
-$hero_img = get_theme_mod( 'qs_hero' );
+$slides = array();
+foreach ( array( 1, 2 ) as $i ) {
+	if ( $img = get_theme_mod( 'qs_slide' . $i ) ) {
+		$slides[] = array( 'img' => $img, 'link' => get_theme_mod( 'qs_slide' . $i . '_link' ) );
+	}
+}
+if ( ! $slides && get_theme_mod( 'qs_hero' ) ) {
+	$slides[] = array( 'img' => get_theme_mod( 'qs_hero' ), 'link' => '' );
+}
+$nav = qs_nav();
 ?>
-<section class="qs-hero">
-	<div class="wrap qs-hero-in">
-		<span class="free-chip"><?php echo qs_ic( 'bolt' ) . ' '; qs_e( 'post_sub' ); ?></span>
+<section class="hs" data-hs>
+	<div class="hs-track">
+		<?php if ( $slides ) : ?>
+			<?php foreach ( $slides as $i => $sl ) : ?>
+			<div class="hs-slide<?php echo $i ? '' : ' on'; ?>"><img src="<?php echo esc_url( $sl['img'] ); ?>" alt="" <?php echo $i ? 'loading="lazy"' : 'fetchpriority="high"'; ?>><?php if ( $sl['link'] ) : ?><a class="hs-link" href="<?php echo esc_url( $sl['link'] ); ?>" aria-label="<?php echo esc_attr( qs_t( 'view_all' ) ); ?>"></a><?php endif; ?></div>
+			<?php endforeach; ?>
+		<?php else : ?>
+			<div class="hs-slide hs-blank on"><?php echo qs_art( 'vehicle' ); // phpcs:ignore ?></div>
+		<?php endif; ?>
+	</div>
+	<div class="hs-shade"></div>
+	<div class="wrap hs-txt">
 		<h1><?php qs_e( 'hero_t' ); ?></h1>
 		<p class="lead"><?php qs_e( 'hero_p' ); ?></p>
-		<div class="hero-secs">
-			<?php foreach ( qs_nav() as $n ) : ?>
-			<a class="hero-sec" href="<?php echo esc_url( $n['url'] ); ?>"><span class="hs-ic"><?php echo qs_ic( $n['icon'] ); ?></span><b><?php echo esc_html( $n['label'] ); ?></b><small><?php echo esc_html( qs_tf( 'ads_n', array( 'n' => $count( $n['term'] ) ) ) ); ?></small></a>
+		<a class="btn btn-y btn-lg" href="<?php echo esc_url( qs_page_url( 'post' ) ); ?>"><?php echo qs_ic( 'plus' ) . ' '; qs_e( 'post_ad' ); ?></a>
+	</div>
+	<?php if ( count( $slides ) > 1 ) : ?>
+	<button class="hs-arr prev" data-act="hs" data-d="-1" aria-label="prev"><?php echo qs_ic( 'chevl', 'flip' ); ?></button>
+	<button class="hs-arr next" data-act="hs" data-d="1" aria-label="next"><?php echo qs_ic( 'chev', 'flip' ); ?></button>
+	<div class="hs-dots"><?php foreach ( $slides as $i => $sl ) { echo '<button data-act="hs-to" data-i="' . (int) $i . '" class="' . ( $i ? '' : 'on' ) . '" aria-label="' . (int) ( $i + 1 ) . '"></button>'; } ?></div>
+	<?php endif; ?>
+</section>
+
+<section class="wrap sec cat-sec"><?php echo qs_sec_head( qs_t( 'browse_cats' ) ); // phpcs:ignore ?>
+	<div class="cs" data-cs>
+		<button class="cs-arr prev" data-act="cs" data-d="-1" aria-label="prev"><?php echo qs_ic( 'chevl', 'flip' ); ?></button>
+		<div class="cs-track">
+			<?php foreach ( $nav as $n ) : ?>
+			<a class="cs-item" href="<?php echo esc_url( $n['url'] ); ?>"><span class="cs-ic"><?php echo qs_ic( $n['icon'] ); ?></span><b><?php echo esc_html( $n['label'] ); ?></b><small><?php echo esc_html( qs_tf( 'ads_n', array( 'n' => $count( $n['term'] ) ) ) ); ?></small></a>
 			<?php endforeach; ?>
 		</div>
-	</div>
-	<?php if ( $hero_img ) : ?><div class="qs-hero-bg" style="background-image:url('<?php echo esc_url( $hero_img ); ?>')"></div><?php endif; ?>
-</section>
-
-<?php if ( qs_term( 'vehicles' ) ) : ?>
-<?php $veh = qs_nav()[0]; ?>
-<section class="wrap sec"><?php echo qs_sec_head( $veh['label'], $veh['url'], $veh['icon'] ); // phpcs:ignore ?>
-	<div class="sub-grid">
-		<?php foreach ( qs_children( $veh['term'] ) as $c ) : ?>
-		<a class="sub-tile" href="<?php echo esc_url( get_term_link( $c ) ); ?>"><span class="st-ic"><?php echo qs_ic( $veh['icon'] ); ?></span><b><?php echo esc_html( qs_term_name( $c ) ); ?></b></a>
-		<?php endforeach; ?>
+		<button class="cs-arr next" data-act="cs" data-d="1" aria-label="next"><?php echo qs_ic( 'chev', 'flip' ); ?></button>
 	</div>
 </section>
-<?php endif; ?>
 
-<?php if ( $makes ) : ?>
-<section class="wrap sec"><?php echo qs_sec_head( qs_t( 'popular_makes' ) ); // phpcs:ignore ?>
-	<div class="make-grid"><?php foreach ( array_slice( $makes, 0, 18 ) as $m ) { echo '<a class="make-tile" href="' . esc_url( get_term_link( $m ) ) . '"><b>' . esc_html( qs_term_name( $m ) ) . '</b><small>' . esc_html( qs_tf( 'ads_n', array( 'n' => $m->count ) ) ) . '</small></a>'; } ?></div>
-</section>
-<?php endif; ?>
-
-<?php if ( $featured ) : ?>
-<section class="wrap sec feat-sec"><?php echo qs_sec_head( qs_t( 'featured_ads' ), qs_ads_url( array( 'featured' => 1 ) ), 'star' ); // phpcs:ignore ?><div class="grid g3"><?php echo implode( '', array_map( 'qs_card', $featured ) ); // phpcs:ignore ?></div></section>
-<?php endif; ?>
+<?php if ( $b = qs_sponsored( 'home_top' ) ) : ?><section class="wrap sec-spons"><?php echo $b; // phpcs:ignore ?></section><?php endif; ?>
 
 <?php
-foreach ( qs_nav() as $i => $n ) :
-	$list = $ids( array( 'tax_query' => array( array( 'taxonomy' => 'qs_cat', 'terms' => $n['term']->term_id ) ) ) );
+$shown = 0;
+foreach ( qs_menu_split()[0] as $n ) {
+	$list = $latest( $n['term'] );
 	if ( ! $list ) {
 		continue;
 	}
-	?>
-<section class="wrap sec"><?php echo qs_sec_head( $n['label'], $n['url'], $n['icon'] ); // phpcs:ignore ?><div class="grid g3"><?php echo implode( '', array_map( 'qs_card', $list ) ); // phpcs:ignore ?></div></section>
-	<?php if ( 0 === $i ) : ?>
-<section class="wrap"><div class="promo qs-promo"><div class="promo-txt"><h2><?php qs_e( 'promo_t' ); ?></h2><p><?php qs_e( 'promo_p' ); ?></p><a class="btn btn-y2 btn-lg" href="<?php echo esc_url( qs_page_url( 'post' ) ); ?>"><?php echo qs_ic( 'plus' ) . ' '; qs_e( 'post_ad' ); ?></a></div><img src="<?php echo esc_url( QS_URI . '/assets/img/logo-icon.png' ); ?>" alt="" class="promo-logo"></div></section>
-	<?php endif; ?>
-<?php endforeach; ?>
-<?php
+	echo '<section class="wrap sec">' . qs_sec_head( $n['label'], $n['url'], $n['icon'] ) . '<div class="grid g5">' . implode( '', array_map( 'qs_card', $list ) ) . '</div></section>'; // phpcs:ignore
+	if ( 1 === ++$shown ) {
+		$mid = qs_sponsored( 'home_mid' );
+		echo $mid ? '<section class="wrap sec-spons">' . $mid . '</section>' : '<section class="wrap"><div class="promo qs-promo"><div class="promo-txt"><h2>' . esc_html( qs_t( 'promo_t' ) ) . '</h2><p>' . esc_html( qs_t( 'promo_p' ) ) . '</p><a class="btn btn-y2 btn-lg" href="' . esc_url( qs_page_url( 'post' ) ) . '">' . qs_ic( 'plus' ) . ' ' . esc_html( qs_t( 'post_ad' ) ) . '</a></div><img src="' . esc_url( QS_URI . '/assets/img/logo-icon.png' ) . '" alt="" class="promo-logo"></div></section>'; // phpcs:ignore
+	}
+}
+/* Other main categories with ads: one row each. */
+foreach ( qs_menu_split()[1] as $n ) {
+	$list = array_slice( $latest( $n['term'] ), 0, 5 );
+	if ( $list ) {
+		echo '<section class="wrap sec">' . qs_sec_head( $n['label'], $n['url'], $n['icon'] ) . '<div class="grid g5">' . implode( '', array_map( 'qs_card', $list ) ) . '</div></section>'; // phpcs:ignore
+	}
+}
 get_footer();

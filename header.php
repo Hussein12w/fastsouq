@@ -1,5 +1,5 @@
 <?php
-/** Header: logo, search, language, account, post ad; navigation with the three sections and their sub-sections. */
+/** Header: logo, search, language, account, post ad; mega menu with 6 main categories and "More". */
 defined( 'ABSPATH' ) || exit;
 $uid    = get_current_user_id();
 $active = qs_nav_key();
@@ -39,13 +39,18 @@ $active = qs_nav_key();
 			<a href="<?php echo esc_url( qs_page_url( 'post' ) ); ?>" class="btn btn-y post-btn"><?php echo qs_ic( 'plus' ); ?><span><?php qs_e( 'post_ad' ); ?></span></a>
 		</div>
 	</div>
+	<?php list( $menu_in, $menu_more ) = qs_menu_split(); ?>
 	<nav class="mainnav"><div class="wrap navrow">
 		<button class="menu-btn" data-act="drawer" aria-label="<?php echo esc_attr( qs_t( 'menu' ) ); ?>"><?php echo qs_ic( 'menu' ); ?></button>
-		<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="<?php echo 'home' === $active ? 'on' : ''; ?>"><?php echo qs_ic( 'home' ); ?><span><?php qs_e( 'home' ); ?></span></a>
-		<?php foreach ( qs_nav() as $n ) : ?>
-		<div class="dd<?php echo $active === $n['slug'] ? ' on' : ''; ?>"><a href="<?php echo esc_url( $n['url'] ); ?>" class="<?php echo $active === $n['slug'] ? 'on' : ''; ?>"><?php echo qs_ic( $n['icon'] ); ?><span><?php echo esc_html( $n['label'] ); ?></span><?php echo qs_ic( 'chev', 'dd-caret' ); ?></a>
-			<div class="dd-menu"><?php foreach ( $n['subs'] as $s ) { echo '<a href="' . esc_url( $s['url'] ) . '">' . esc_html( $s['label'] ) . '</a>'; } ?><a class="dd-all" href="<?php echo esc_url( $n['url'] ); ?>"><?php qs_e( 'view_all' ); ?></a></div></div>
-		<?php endforeach; ?>
+		<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="nav-home<?php echo 'home' === $active ? ' on' : ''; ?>"><?php echo qs_ic( 'home' ); ?><span><?php qs_e( 'home' ); ?></span></a>
+		<?php
+		foreach ( $menu_in as $n ) {
+			echo qs_mega( $n, $active === $n['slug'] ); // phpcs:ignore
+		}
+		if ( $menu_more ) {
+			echo qs_mega( array( 'slug' => 'more', 'label' => qs_t( 'more' ), 'url' => qs_ads_url(), 'icon' => 'dots', 'subs' => $menu_more ), in_array( $active, wp_list_pluck( $menu_more, 'slug' ), true ) ); // phpcs:ignore
+		}
+		?>
 	</div></nav>
 </header>
 <main id="view">

@@ -2,9 +2,15 @@
 /** Content model, assets, browse filters, expiry, views, search. */
 defined( 'ABSPATH' ) || exit;
 
-/* Field group of each main section (see inc/data.php). */
+/**
+ * Field group of a section: the five car sections have their own groups (inc/data.php),
+ * "Cars" itself has none, and every other main category uses the general fields.
+ */
 function qs_group_of( $section_slug ) {
-	return qs_sections()[ $section_slug ][2] ?? 'item';
+	if ( isset( qs_sections()[ $section_slug ] ) ) {
+		return qs_sections()[ $section_slug ][2];
+	}
+	return 'cars' === $section_slug ? '' : 'general';
 }
 
 add_action(

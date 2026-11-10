@@ -7,8 +7,14 @@ add_action(
 		$c->add_section( 'qs', array( 'title' => 'FastSouq', 'priority' => 30 ) );
 		$c->add_setting( 'qs_logo', array( 'sanitize_callback' => 'esc_url_raw' ) );
 		$c->add_control( new WP_Customize_Image_Control( $c, 'qs_logo', array( 'label' => 'الشعار (مربّع)', 'section' => 'qs' ) ) );
-		$c->add_setting( 'qs_hero', array( 'sanitize_callback' => 'esc_url_raw' ) );
-		$c->add_control( new WP_Customize_Image_Control( $c, 'qs_hero', array( 'label' => 'صورة الواجهة (اختياري — بدلاً من الشعار)', 'section' => 'qs' ) ) );
+		foreach ( array( 1, 2 ) as $i ) {
+			$c->add_setting( 'qs_slide' . $i, array( 'sanitize_callback' => 'esc_url_raw' ) );
+			$c->add_control( new WP_Customize_Image_Control( $c, 'qs_slide' . $i, array( 'label' => 'صورة السلايدر ' . $i . ' في الواجهة (مقترح 1920×640)', 'section' => 'qs' ) ) );
+			$c->add_setting( 'qs_slide' . $i . '_link', array( 'sanitize_callback' => 'esc_url_raw' ) );
+			$c->add_control( 'qs_slide' . $i . '_link', array( 'label' => 'رابط عند الضغط على الصورة ' . $i . ' (اختياري)', 'section' => 'qs', 'type' => 'url' ) );
+		}
+		$c->add_setting( 'qs_ad_placeholder', array( 'default' => 1, 'sanitize_callback' => 'absint' ) );
+		$c->add_control( 'qs_ad_placeholder', array( 'label' => 'إظهار مربع «أعلن هنا» في المساحات الجانبية الفارغة', 'section' => 'qs', 'type' => 'checkbox' ) );
 		$txt = function ( $id, $label, $default = '', $type = 'text', $san = 'sanitize_text_field' ) use ( $c ) {
 			$c->add_setting( $id, array( 'default' => $default, 'sanitize_callback' => $san ) );
 			$c->add_control( $id, array( 'label' => $label, 'section' => 'qs', 'type' => $type ) );

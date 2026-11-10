@@ -22,12 +22,17 @@ function qs_seed_term( $tax, $slug, $ar, $en, $sort, $parent = 0, $meta = array(
 }
 /** Safe to run again: only adds what is missing. */
 function qs_seed_terms() {
-	@set_time_limit( 300 ); // phpcs:ignore
-	$i = 0;
+	@set_time_limit( 600 ); // phpcs:ignore
+	/* "Cars" (السيارات) holds the five original car sections. */
+	$cars = qs_seed_term( 'qs_cat', 'cars', 'السيارات', 'Cars', 0, 0, array( 'icon' => 'car' ) );
+	$i    = 0;
 	foreach ( qs_sections() as $slug => $x ) {
 		$p   = explode( '|', $x[0] );
-		$sid = qs_seed_term( 'qs_cat', $slug, $p[0], $p[1], ++$i, 0, array( 'icon' => $x[1] ) );
-		$j   = 0;
+		$sid = qs_seed_term( 'qs_cat', $slug, $p[0], $p[1], ++$i, $cars, array( 'icon' => $x[1] ) );
+		if ( $sid && $cars && (int) get_term( $sid, 'qs_cat' )->parent !== (int) $cars ) {
+			wp_update_term( $sid, 'qs_cat', array( 'parent' => $cars ) ); // sites from v1.x: move under "Cars"
+		}
+		$j = 0;
 		foreach ( qs_tree()[ $slug ] as $key => $types ) {
 			list( $s, $ar, $en ) = explode( '|', $key );
 			$subid = qs_seed_term( 'qs_cat', $s, $ar, $en, ++$j, $sid );
@@ -37,6 +42,27 @@ function qs_seed_terms() {
 				qs_seed_term( 'qs_cat', $s . '-' . sanitize_title( $ten ), $tar, $ten, ++$k, $subid );
 			}
 		}
+	}
+	/* The other main categories (spreadsheet). */
+	foreach ( qs_mains() as $slug => $x ) {
+		$p   = explode( '|', $x[0] );
+		$mid = 'cars' === $slug ? $cars : qs_seed_term( 'qs_cat', $slug, $p[0], $p[1], 0, 0, array( 'icon' => $x[1] ) );
+		foreach ( $x[2] as $key => $details ) {
+			list( $s, $ar, $en ) = explode( '|', $key );
+			$subid = qs_seed_term( 'qs_cat', $s, $ar, $en, 0, $mid );
+			foreach ( $details as $d ) {
+				list( $dar, $den ) = explode( '|', $d );
+				qs_seed_term( 'qs_cat', $s . '-' . sanitize_title( $den ), $dar, $den, 0, $subid );
+			}
+		}
+	}
+	if ( ! get_option( 'qs_menu_set' ) ) {
+		foreach ( qs_default_menu() as $slug => $pos ) {
+			if ( $t = get_term_by( 'slug', $slug, 'qs_cat' ) ) {
+				update_term_meta( $t->term_id, 'menu', $pos );
+			}
+		}
+		update_option( 'qs_menu_set', 1 );
 	}
 	$i = 0;
 	foreach ( qs_makes() as $origin => $makes ) {
@@ -56,7 +82,8 @@ function qs_seed_terms() {
 			qs_seed_term( 'qs_city', $cs, $car, $cen, $k + 1, $eid );
 		}
 	}
-	update_option( 'qs_terms_version', 1 );
+	update_option( 'qs_terms_version', QS_TERMS_VERSION );
+	clean_term_cache( array(), 'qs_cat' );
 }
 
 /* ---------- Demo ads ---------- */

@@ -11,7 +11,7 @@ $nav   = qs_nav();
 <footer class="ftr"><div class="wrap ftr-cols">
 	<div class="ftr-brand"><?php echo qs_logo(); // phpcs:ignore ?><p><?php qs_e( 'tagline' ); ?></p>
 		<div class="soc"><?php foreach ( array( 'instagram' => 'Instagram', 'tiktok' => 'TikTok', 'x' => 'X', 'youtube' => 'YouTube', 'facebook' => 'Facebook' ) as $k => $n ) { if ( $u = get_theme_mod( 'qs_social_' . $k ) ) { echo '<a href="' . esc_url( $u ) . '" class="soc-i" target="_blank" rel="noopener">' . esc_html( $n ) . '</a>'; } } ?></div></div>
-	<?php foreach ( array_slice( $nav, 0, 3 ) as $n ) : ?>
+	<?php foreach ( array_slice( qs_menu_split()[0], 0, 3 ) as $n ) : ?>
 	<div><h4><?php echo esc_html( $n['label'] ); ?></h4><?php foreach ( array_slice( $n['subs'], 0, 8 ) as $s ) { echo '<a href="' . esc_url( $s['url'] ) . '">' . esc_html( $s['label'] ) . '</a>'; } ?></div>
 	<?php endforeach; ?>
 	<div><h4><?php qs_e( 'site_name' ); ?></h4>
@@ -41,7 +41,18 @@ $nav   = qs_nav();
 	<h5><?php qs_e( 'all_sections' ); ?></h5>
 	<?php foreach ( $nav as $n ) : ?>
 	<details class="dr-sec"><summary><?php echo qs_ic( $n['icon'] ); ?><span><?php echo esc_html( $n['label'] ); ?></span></summary>
-	<?php foreach ( $n['subs'] as $s ) { echo '<a href="' . esc_url( $s['url'] ) . '"><span>' . esc_html( $s['label'] ) . '</span></a>'; } // phpcs:ignore ?></details>
+		<a class="dr-all" href="<?php echo esc_url( $n['url'] ); ?>"><span><?php echo esc_html( qs_t( 'view_all' ) . ' — ' . $n['label'] ); ?></span></a>
+		<?php foreach ( $n['subs'] as $s ) : ?>
+		<?php if ( $s['subs'] ) : ?>
+		<details class="dr-sub"><summary><span><?php echo esc_html( $s['label'] ); ?></span></summary>
+			<a class="dr-all" href="<?php echo esc_url( $s['url'] ); ?>"><span><?php echo esc_html( qs_t( 'view_all' ) ); ?></span></a>
+			<?php foreach ( $s['subs'] as $k ) { echo '<a href="' . esc_url( $k['url'] ) . '"><span>' . esc_html( $k['label'] ) . '</span></a>'; } ?>
+		</details>
+		<?php else : ?>
+		<a href="<?php echo esc_url( $s['url'] ); ?>"><span><?php echo esc_html( $s['label'] ); ?></span></a>
+		<?php endif; ?>
+		<?php endforeach; ?>
+	</details>
 	<?php endforeach; ?>
 	<h5><?php qs_e( 'my_account' ); ?></h5>
 	<a href="<?php echo esc_url( qs_page_url( $uid ? 'account' : 'login' ) ); ?>"><?php echo qs_ic( 'user' ); ?><span><?php qs_e( $uid ? 'my_account' : 'login' ); ?></span></a>

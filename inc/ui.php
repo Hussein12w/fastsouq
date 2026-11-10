@@ -9,13 +9,32 @@ function qs_ic( $name, $cls = '' ) {
 			'car'   => '<path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/>',
 			'wheel' => '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/>',
 			'gear'  => '<circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="12" cy="18" r="2"/><path d="M6 8v8M12 8v8M18 8v4H6"/>',
+			/* Main categories */
+			'music'     => '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+			'sofa'      => '<path d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M2 13a2 2 0 0 1 4 0v2h12v-2a2 2 0 0 1 4 0v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/><path d="M5 18v2M19 18v2"/>',
+			'appliance' => '<rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M8 5.5h.01M11 5.5h.01"/>',
+			'factory'   => '<path d="M2 20V9l6 4V9l6 4V4h4l2 16z"/><path d="M2 20h20"/>',
+			'gamepad'   => '<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v4M5 12.5h4"/><circle cx="15.5" cy="11.5" r=".8"/><circle cx="17.5" cy="13.8" r=".8"/>',
+			'tv'        => '<rect x="2" y="5" width="20" height="13" rx="2"/><path d="M8 21h8M12 18v3"/>',
+			'ticket'    => '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v2M13 11v2M13 16v2"/>',
+			'dumbbell'  => '<path d="M6.5 6.5v11M17.5 6.5v11M6.5 12h11"/><rect x="3" y="8" width="3.5" height="8" rx="1"/><rect x="17.5" y="8" width="3.5" height="8" rx="1"/>',
+			'book'      => '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+			'laptop'    => '<rect x="4" y="4" width="16" height="11" rx="1.5"/><path d="M2 19h20l-1.5-4h-17z"/>',
+			'diamond'   => '<path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/>',
+			'trophy'    => '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>',
+			'shirt'     => '<path d="M8 3 3 6l2 5 3-1v11h8V10l3 1 2-5-5-3a4 4 0 0 1-8 0z"/>',
+			'mobile'    => '<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/>',
+			'briefcase' => '<rect x="2" y="7" width="20" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M2 13h20"/>',
+			'list'      => '<path d="M9 6h12M9 12h12M9 18h12"/><rect x="3" y="4.5" width="3" height="3" rx=".5"/><rect x="3" y="10.5" width="3" height="3" rx=".5"/><rect x="3" y="16.5" width="3" height="3" rx=".5"/>',
+			'dots'      => '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+			'megaphone' => '<path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/>',
 		);
 	}
 	return '<svg class="ic ' . esc_attr( $cls ) . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ( $p[ $name ] ?? '' ) . '</svg>';
 }
 function qs_art( $group ) {
 	static $c = array();
-	$f = array( 'vehicle' => 'car', 'item' => 'acc', 'service' => 'service' )[ $group ] ?? 'car';
+	$f = array( 'vehicle' => 'car', 'item' => 'acc', 'service' => 'service', 'general' => 'general' )[ $group ] ?? 'car';
 	return $c[ $f ] ??= file_get_contents( QS_DIR . '/assets/art/' . $f . '.svg' );
 }
 function qs_fmt( $n ) {
@@ -36,15 +55,36 @@ function qs_children( $parent, $tax = 'qs_cat' ) {
 		return array();
 	}
 	static $c = array();
-	$key = $tax . ( $p ? $p->term_id : 0 );
+	$key = $tax . ( $p ? $p->term_id : 0 ) . qs_lang();
 	if ( ! isset( $c[ $key ] ) ) {
-		$t = get_terms( array( 'taxonomy' => $tax, 'parent' => $p ? $p->term_id : 0, 'hide_empty' => false, 'meta_key' => 'sort', 'orderby' => 'meta_value_num' ) );
-		if ( is_wp_error( $t ) || ! $t ) {
-			$t = get_terms( array( 'taxonomy' => $tax, 'parent' => $p ? $p->term_id : 0, 'hide_empty' => false, 'orderby' => 'name' ) );
+		if ( 'qs_cat' === $tax ) {
+			/* Categories: alphabetical in the current language (Arabic أ–ي, English A–Z). */
+			$t = get_terms( array( 'taxonomy' => $tax, 'parent' => $p ? $p->term_id : 0, 'hide_empty' => false ) );
+			$t = is_wp_error( $t ) ? array() : qs_sort_terms( $t );
+		} else {
+			$t = get_terms( array( 'taxonomy' => $tax, 'parent' => $p ? $p->term_id : 0, 'hide_empty' => false, 'meta_key' => 'sort', 'orderby' => 'meta_value_num' ) );
+			if ( is_wp_error( $t ) || ! $t ) {
+				$t = get_terms( array( 'taxonomy' => $tax, 'parent' => $p ? $p->term_id : 0, 'hide_empty' => false, 'orderby' => 'name' ) );
+			}
 		}
 		$c[ $key ] = is_wp_error( $t ) ? array() : $t;
 	}
 	return $c[ $key ];
+}
+/** Alphabetical order by the name shown in the current language. */
+function qs_sort_terms( $terms ) {
+	$names = array();
+	foreach ( $terms as $t ) {
+		$names[ $t->term_id ] = qs_term_name( $t );
+	}
+	if ( class_exists( 'Collator' ) ) {
+		$col = new Collator( 'en' === qs_lang() ? 'en' : 'ar' );
+		usort( $terms, fn( $a, $b ) => $col->compare( $names[ $a->term_id ], $names[ $b->term_id ] ) );
+	} else {
+		$norm = fn( $s ) => mb_strtolower( strtr( $s, array( 'أ' => 'ا', 'إ' => 'ا', 'آ' => 'ا', 'ٱ' => 'ا', 'ى' => 'ي', 'ة' => 'ه', 'ؤ' => 'و', 'ئ' => 'ي', 'ـ' => '' ) ) );
+		usort( $terms, fn( $a, $b ) => strcmp( $norm( $names[ $a->term_id ] ), $norm( $names[ $b->term_id ] ) ) );
+	}
+	return $terms;
 }
 /** The ad's terms by level: [section, sub-section, item type]. */
 function qs_levels( $id ) {
@@ -60,6 +100,9 @@ function qs_levels( $id ) {
 		}
 	}
 	$chain = array_reverse( array_merge( array( $deep->term_id ), get_ancestors( $deep->term_id, 'qs_cat' ) ) );
+	if ( count( $chain ) > 1 && ( $root = get_term( $chain[0], 'qs_cat' ) ) && 'cars' === $root->slug ) {
+		array_shift( $chain ); // car ads: [car section, sub-section, item type] under "Cars"
+	}
 	foreach ( $chain as $i => $tid ) {
 		if ( $i < 3 ) {
 			$out[ $i ] = get_term( $tid, 'qs_cat' );
@@ -187,7 +230,7 @@ function qs_card( $id ) {
 		);
 		$top   = qs_price( $id );
 		$line2 = esc_html( $mm ?: qs_term_name( $lv[1] ) );
-	} elseif ( 'item' === $group ) {
+	} elseif ( 'item' === $group || 'general' === $group ) {
 		$attrs = array(
 			( $c = qs_m( $id, 'cond' ) ) ? qs_ic( 'tag', 'sm' ) . ' ' . esc_html( qs_opt( 'item_cond', $c ) ) : '',
 			( $pt = qs_m( $id, 'part_type' ) ) ? qs_ic( 'shield', 'sm' ) . ' ' . esc_html( qs_opt( 'part_type', $pt ) ) : '',
@@ -201,11 +244,12 @@ function qs_card( $id ) {
 		$line2 = '';
 	}
 	$attrs = array_slice( array_filter( $attrs ), 0, 3 );
-	$acts  = $phone ? '<div class="c-acts"><a class="btn btn-sm btn-line" href="tel:+' . esc_attr( $phone ) . '">' . qs_ic( 'phone' ) . ' <span class="ltr">' . esc_html( qs_phone_fmt( $phone ) ) . '</span></a><a class="btn btn-sm btn-wa" href="' . esc_url( qs_wa_link( $phone, qs_title( $id ) . ' — ' . $url ) ) . '" target="_blank" rel="noopener" aria-label="WhatsApp">' . qs_ic( 'wa' ) . '</a></div>' : '';
+	$acts  = $phone ? '<div class="c-acts"><a class="btn btn-sm btn-line c-call" href="tel:+' . esc_attr( $phone ) . '">' . qs_ic( 'phone' ) . ' <span class="ltr">' . esc_html( qs_phone_fmt( $phone ) ) . '</span><span class="c-lbl">' . esc_html( qs_t( 'call' ) ) . '</span></a><a class="btn btn-sm btn-wa" href="' . esc_url( qs_wa_link( $phone, qs_title( $id ) . ' — ' . $url ) ) . '" target="_blank" rel="noopener" aria-label="WhatsApp">' . qs_ic( 'wa' ) . '<span class="c-lbl">' . esc_html( qs_t( 'whatsapp' ) ) . '</span></a></div>' : '';
+	$desc  = wp_trim_words( wp_strip_all_tags( qs_desc( $id ) ), 26, '…' );
 	return '<article class="card dz qs-card g-' . esc_attr( $group ) . ( qs_m( $id, 'featured' ) ? ' is-feat' : '' ) . '"><a class="stretch" href="' . esc_url( $url ) . '" aria-label="' . esc_attr( qs_title( $id ) ) . '"></a>
     <div class="media">' . qs_media( $id ) . '<div class="badges">' . $badge . '</div>' . qs_fav_btn( $id ) . '</div>
     <div class="cbody"><div class="cprice">' . $top . '</div><h3>' . esc_html( qs_title( $id ) ) . '</h3>
-      ' . ( $line2 ? '<div class="csub">' . $line2 . '</div>' : '' ) . ( $attrs ? '<div class="cattrs">' . implode( '', array_map( fn( $x ) => '<span>' . $x . '</span>', $attrs ) ) . '</div>' : '' ) . '
+      ' . ( $line2 ? '<div class="csub">' . $line2 . '</div>' : '' ) . ( $desc ? '<p class="cdesc">' . esc_html( $desc ) . '</p>' : '' ) . ( $attrs ? '<div class="cattrs">' . implode( '', array_map( fn( $x ) => '<span>' . $x . '</span>', $attrs ) ) . '</div>' : '' ) . '
       <div class="cloc"><span>' . qs_ic( 'pin', 'sm' ) . ' ' . esc_html( qs_city_label( $id ) ) . '</span><span class="ago">' . esc_html( qs_ago( $id ) ) . '</span></div>' . $acts . '</div></article>';
 }
 
@@ -248,20 +292,65 @@ function qs_lang_btns() {
 	return $h;
 }
 
-/** Main navigation: the five sections with their sub-sections. */
+/**
+ * Main categories (alphabetical) with two levels below each, for the menu, drawer, home slider and search.
+ * Under "Cars" the second level is the five car sections (vehicles, spare parts…) and the third their sub-sections.
+ */
 function qs_nav() {
-	static $n = null;
-	if ( null !== $n ) {
-		return $n;
+	static $n = array();
+	$lang = qs_lang();
+	if ( isset( $n[ $lang ] ) ) {
+		return $n[ $lang ];
 	}
-	$n = array();
-	foreach ( qs_sections() as $slug => $x ) {
-		if ( ! ( $t = qs_term( $slug ) ) ) {
-			continue;
+	$icons = array_map( fn( $x ) => $x[1], qs_mains() ) + array_map( fn( $x ) => $x[1], qs_sections() );
+	$item  = function ( $t, $kids = true ) use ( &$item, $icons ) {
+		return array(
+			'slug'  => $t->slug,
+			'label' => qs_term_name( $t ),
+			'url'   => get_term_link( $t ),
+			'icon'  => $icons[ $t->slug ] ?? ( get_term_meta( $t->term_id, 'icon', true ) ?: 'grid' ),
+			'term'  => $t,
+			'subs'  => $kids ? array_map( fn( $c ) => $item( $c, false ), qs_children( $t ) ) : array(),
+		);
+	};
+	$out = array();
+	foreach ( qs_children( 0 ) as $t ) {
+		$e         = $item( $t );
+		$e['menu'] = (int) get_term_meta( $t->term_id, 'menu', true );
+		foreach ( $e['subs'] as $i => $s ) {
+			$e['subs'][ $i ]['subs'] = array_map( fn( $c ) => $item( $c, false ), qs_children( $s['term'] ) );
 		}
-		$n[] = array( 'slug' => $slug, 'label' => qs_term_name( $t ), 'url' => get_term_link( $t ), 'icon' => $x[1], 'term' => $t, 'subs' => array_map( fn( $c ) => array( 'label' => qs_term_name( $c ), 'url' => get_term_link( $c ), 'slug' => $c->slug ), qs_children( $t ) ) );
+		$out[] = $e;
 	}
-	return $n;
+	return $n[ $lang ] = $out;
+}
+/** The (up to 6) main categories shown in the menu bar, in their menu order; the rest go under "More". */
+function qs_menu_split() {
+	$in = array_values( array_filter( qs_nav(), fn( $e ) => $e['menu'] > 0 ) );
+	usort( $in, fn( $a, $b ) => $a['menu'] <=> $b['menu'] );
+	$in   = array_slice( $in, 0, 6 );
+	$keep = wp_list_pluck( $in, 'slug' );
+	return array( $in, array_values( array_filter( qs_nav(), fn( $e ) => ! in_array( $e['slug'], $keep, true ) ) ) );
+}
+/**
+ * One menu item with its mega panel (like dubizzle): the list of sub-categories on one side,
+ * and the children of the hovered one on the other, with "View all".
+ */
+function qs_mega( $n, $on = false ) {
+	$more = 'more' === $n['slug'];
+	$subs = '';
+	$pans = '';
+	foreach ( $n['subs'] as $i => $s ) {
+		$subs .= '<a href="' . esc_url( $s['url'] ) . '" class="mm-sub' . ( $i ? '' : ' on' ) . '" data-i="' . $i . '">' . ( $more ? qs_ic( $s['icon'], 'sm' ) . ' ' : '' ) . '<span>' . esc_html( $s['label'] ) . '</span>' . qs_ic( 'chev', 'flip sm' ) . '</a>';
+		$kids  = '';
+		foreach ( $s['subs'] as $k ) {
+			$kids .= '<a href="' . esc_url( $k['url'] ) . '">' . esc_html( $k['label'] ) . '</a>';
+		}
+		$pans .= '<div class="mm-pane' . ( $i ? '' : ' on' ) . '" data-i="' . $i . '"><div class="mm-ph"><b>' . esc_html( $s['label'] ) . '</b><a href="' . esc_url( $s['url'] ) . '" class="mm-all">' . esc_html( qs_t( 'view_all' ) ) . ' ' . qs_ic( 'arrow', 'flip sm' ) . '</a></div>' . ( $kids ? '<div class="mm-cols">' . $kids . '</div>' : '' ) . '</div>';
+	}
+	$post = $more ? '' : '<a class="mm-post" href="' . esc_url( qs_page_url( 'post', 'cars' === $n['slug'] ? array( 'main' => 'cars' ) : array( 'section' => $n['slug'] ) ) ) . '"><b>' . esc_html( qs_tf( 'post_in', array( 'c' => $n['label'] ) ) ) . '</b><span class="mm-post-ic">' . qs_ic( $n['icon'] ) . '</span></a>';
+	return '<div class="mm' . ( $on ? ' on' : '' ) . ( $more ? ' mm-more' : '' ) . '"><a href="' . esc_url( $n['url'] ) . '" class="mm-top' . ( $on ? ' on' : '' ) . '">' . qs_ic( $n['icon'] ) . '<span>' . esc_html( $n['label'] ) . '</span>' . qs_ic( 'chev', 'dd-caret' ) . '</a>'
+		. ( $n['subs'] ? '<div class="mm-panel"><div class="mm-subs">' . $subs . $post . '</div><div class="mm-kids">' . $pans . '</div></div>' : '' ) . '</div>';
 }
 /** Top-level section of the current page. */
 function qs_nav_key() {

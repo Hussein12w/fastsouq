@@ -43,6 +43,9 @@ if ( 'vehicle' === $group ) {
 	}
 	$add( qs_t( 'deal' ), qs_m( $id, 'deal' ) ? qs_opt( 'deal', qs_m( $id, 'deal' ) ) : '' );
 	$add( qs_t( 'period' ), qs_m( $id, 'period' ) ? qs_opt( 'period', qs_m( $id, 'period' ) ) : '' );
+} elseif ( 'general' === $group ) {
+	$add( qs_t( 'cat_detail' ), qs_term_name( $lv[2] ) );
+	$add( qs_t( 'condition' ), qs_m( $id, 'cond' ) ? qs_opt( 'item_cond', qs_m( $id, 'cond' ) ) : '' );
 } elseif ( 'item' === $group ) {
 	$add( qs_t( 'item_type' ), qs_term_name( $lv[2] ) );
 	$add( qs_t( 'part_brand' ), qs_m( $id, 'brand' ) );
@@ -55,8 +58,11 @@ if ( 'vehicle' === $group ) {
 }
 $add( qs_t( 'location' ), $addr );
 $add( qs_t( 'ad_no' ), 'QS-' . ( 1000 + $id ) );
-$similar = get_posts( array( 'post_type' => 'listing', 'fields' => 'ids', 'posts_per_page' => 3, 'post__not_in' => array( $id ), 'tax_query' => array( array( 'taxonomy' => 'qs_cat', 'terms' => ( $lv[2] ?: $lv[1] ?: $lv[0] )->term_id ?? 0 ) ) ) );
+$similar = get_posts( array( 'post_type' => 'listing', 'fields' => 'ids', 'posts_per_page' => 5, 'post__not_in' => array( $id ), 'tax_query' => array( array( 'taxonomy' => 'qs_cat', 'terms' => ( $lv[2] ?: $lv[1] ?: $lv[0] )->term_id ?? 0 ) ) ) );
 $crumbs  = array();
+if ( $lv[0] && isset( qs_sections()[ $lv[0]->slug ] ) && ( $cars = qs_term( 'cars' ) ) ) {
+	$crumbs[] = array( qs_term_name( $cars ), get_term_link( $cars ) );
+}
 foreach ( array_filter( $lv ) as $t ) {
 	$crumbs[] = array( qs_term_name( $t ), get_term_link( $t ) );
 }
@@ -110,10 +116,11 @@ echo qs_modal_tpl( 'report', $report . '<button class="btn btn-dark btn-lg full"
 			<div class="box seller"><h3><?php qs_e( 'advertiser' ); ?></h3><a class="co-row" href="<?php echo esc_url( get_author_posts_url( $author->ID ) ); ?>"><div class="co-logo"><?php echo esc_html( mb_substr( $author->display_name, 0, 1 ) ); ?></div><div><b><?php echo esc_html( $author->display_name ); ?></b><small><?php echo esc_html( qs_t( 'member_since' ) . ' ' . gmdate( 'Y', strtotime( $author->user_registered ) ) ); ?></small></div></a>
 				<a class="btn btn-line full" href="<?php echo esc_url( get_author_posts_url( $author->ID ) ); ?>"><?php qs_e( 'his_ads' ); ?></a></div>
 			<?php endif; ?>
+			<?php echo qs_sponsored( 'ad_side', $lv[0] ); // phpcs:ignore ?>
 			<div class="box tips"><h3><?php echo qs_ic( 'shield' ) . ' '; qs_e( 'safety' ); ?></h3><ul><li><?php qs_e( 'safety1' ); ?></li><li><?php qs_e( 'safety2' ); ?></li><li><?php qs_e( 'safety3' ); ?></li></ul></div>
 		</aside>
 	</div>
-	<?php if ( $similar ) : ?><section class="sec"><?php echo qs_sec_head( qs_t( 'similar' ), $lv[1] ? get_term_link( $lv[1] ) : '' ); // phpcs:ignore ?><div class="grid g3"><?php foreach ( $similar as $s ) { echo qs_card( $s ); } // phpcs:ignore ?></div></section><?php endif; ?>
+	<?php if ( $similar ) : ?><section class="sec"><?php echo qs_sec_head( qs_t( 'similar' ), $lv[1] ? get_term_link( $lv[1] ) : '' ); // phpcs:ignore ?><div class="grid g5"><?php foreach ( $similar as $s ) { echo qs_card( $s ); } // phpcs:ignore ?></div></section><?php endif; ?>
 </div>
 <?php
 get_footer();

@@ -4,18 +4,18 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Ad fields (from the spreadsheet): key => [label, control, groups, required groups]
- * Groups: vehicle (cars & vehicles), item (spare parts, accessories, tools), service.
+ * Groups: vehicle (cars & vehicles), item (spare parts, accessories, tools), service, general (every other main category).
  */
 function qs_fields() {
 	return array(
-		'title'     => array( 'name', 'text', 'vehicle item service', 'vehicle item service' ),
-		'itype'     => array( 'item_type', 'itype', 'item', '' ),
+		'title'     => array( 'name', 'text', 'vehicle item service general', 'vehicle item service general' ),
+		'itype'     => array( 'item_type', 'itype', 'item general', '' ),
 		'deal'      => array( 'deal', 'chips:deal', 'vehicle', '' ),
 		'make'      => array( 'make', 'make', 'vehicle item', '' ),
 		'model'     => array( 'model', 'model', 'vehicle item', '' ),
 		'year'      => array( 'year', 'select:years', 'vehicle item', '' ),
 		'body'      => array( 'body', 'body', 'vehicle', '' ),
-		'cond'      => array( 'condition', 'chips:cond', 'vehicle item', 'vehicle item' ),
+		'cond'      => array( 'condition', 'chips:cond', 'vehicle item general', 'vehicle item' ),
 		'km'        => array( 'kms', 'number', 'vehicle', '' ),
 		'gear'      => array( 'gear', 'chips:gear', 'vehicle', '' ),
 		'fuel'      => array( 'fuel', 'chips:fuel', 'vehicle', '' ),
@@ -25,15 +25,16 @@ function qs_fields() {
 		'brand'     => array( 'part_brand', 'text', 'item', '' ),
 		'part_type' => array( 'part_type', 'chips:part_type', 'item', '' ),
 		'sku'       => array( 'sku', 'text', 'item', '' ),
-		'price'     => array( 'price', 'number', 'vehicle item', '' ),
+		'price'     => array( 'price', 'number', 'vehicle item general', '' ),
 		'period'    => array( 'period', 'chips:period', 'vehicle', '' ),
-		'desc'      => array( 'about', 'textarea', 'vehicle item service', '' ),
+		'desc'      => array( 'about', 'textarea', 'vehicle item service general', '' ),
 	);
 }
 /** Labels that change with the group (e.g. make → compatible make for parts). */
 function qs_field_label( $key, $group ) {
 	$map = array(
 		'title' => array( 'vehicle' => 'vehicle_name', 'item' => 'item_name', 'service' => 'service_name' ),
+		'itype' => array( 'general' => 'cat_detail' ),
 		'make'  => array( 'item' => 'compat_make' ),
 		'model' => array( 'item' => 'compat_model' ),
 		'year'  => array( 'item' => 'compat_year' ),
@@ -46,7 +47,7 @@ function qs_field_options( $src, $group = '' ) {
 		$y = (int) gmdate( 'Y' ) + 1;
 		return array_map( fn( $i ) => array( $y - $i, $y - $i, '' ), range( 0, $y - 1960 ) );
 	}
-	if ( 'cond' === $src && 'item' === $group ) {
+	if ( 'cond' === $src && in_array( $group, array( 'item', 'general' ), true ) ) {
 		$src = 'item_cond';
 	}
 	$out = array();
@@ -55,6 +56,14 @@ function qs_field_options( $src, $group = '' ) {
 	}
 	return $out;
 }
+/** A car section (vehicles, spare parts…) or a main category other than "Cars": what an ad is posted in. */
+function qs_is_section( $slug ) {
+	if ( isset( qs_sections()[ $slug ] ) ) {
+		return (bool) qs_term( $slug );
+	}
+	$t = $slug && 'cars' !== $slug ? qs_term( $slug ) : null;
+	return $t && ! $t->parent;
+}
 function qs_post_values( $id ) {
 	if ( ! $id ) {
 		return array();
@@ -62,7 +71,8 @@ function qs_post_values( $id ) {
 	$p  = get_post( $id );
 	$lv = qs_levels( $id );
 	list( $make, $model ) = qs_make_model( $id );
-	$v = array( 'section' => $lv[0] ? $lv[0]->slug : '', 'sub' => $lv[1] ? $lv[1]->slug : '', 'itype' => $lv[2] ? $lv[2]->slug : '', 'title' => $p->post_title, 'desc' => $p->post_content, 'make' => $make ? $make->slug : '', 'model' => $model ? $model->name : '' );
+	$sec = $lv[0] ? $lv[0]->slug : '';
+	$v   = array( 'main' => isset( qs_sections()[ $sec ] ) ? 'cars' : $sec, 'section' => $sec, 'sub' => $lv[1] ? $lv[1]->slug : '', 'itype' => $lv[2] ? $lv[2]->slug : '', 'title' => $p->post_title, 'desc' => $p->post_content, 'make' => $make ? $make->slug : '', 'model' => $model ? $model->name : '' );
 	foreach ( array( 'deal', 'year', 'body', 'cond', 'km', 'gear', 'fuel', 'cyl', 'specs', 'color', 'brand', 'part_type', 'sku', 'price', 'period', 'area', 'lat', 'lng', 'phone', 'title_en' ) as $k ) {
 		$v[ $k ] = qs_m( $id, $k );
 	}
@@ -168,9 +178,10 @@ function qs_handle_post_ad() {
 	if ( $edit && ( 'listing' !== get_post_type( $edit ) || (int) get_post_field( 'post_author', $edit ) !== $uid ) ) {
 		wp_die( 'Not allowed', 403 );
 	}
-	$section = qs_req( 'section' );
+	$main    = qs_req( 'main' );
+	$section = 'cars' === $main ? qs_req( 'section' ) : $main;
 	$back    = qs_page_url( 'post', $edit ? array( 'edit' => $edit ) : array( 'section' => $section ) );
-	if ( ! isset( qs_sections()[ $section ] ) ) {
+	if ( ! qs_is_section( $section ) ) {
 		qs_back( $back, array( 'qs_err' => 'err_required' ) );
 	}
 	$group = qs_group_of( $section );

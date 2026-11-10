@@ -2,19 +2,22 @@
 /** FastSouq theme bootstrap. */
 defined( 'ABSPATH' ) || exit;
 
-define( 'QS_VERSION', '1.1.0' );
+define( 'QS_VERSION', '1.2.0' );
+define( 'QS_TERMS_VERSION', 2 ); // raise when the classification changes
 define( 'QS_DIR', get_template_directory() );
 define( 'QS_URI', get_template_directory_uri() );
 
 require QS_DIR . '/inc/icon-paths.php';
 require QS_DIR . '/inc/i18n.php';
 require QS_DIR . '/inc/data.php';
+require QS_DIR . '/inc/categories.php';
 require QS_DIR . '/inc/makes-ar.php';
 require QS_DIR . '/inc/setup.php';
 require QS_DIR . '/inc/ui.php';
 require QS_DIR . '/inc/browse.php';
 require QS_DIR . '/inc/forms.php';
 require QS_DIR . '/inc/promotions.php';
+require QS_DIR . '/inc/sponsored.php';
 require QS_DIR . '/inc/admin.php';
 require QS_DIR . '/inc/customizer.php';
 require QS_DIR . '/inc/seed.php';
@@ -27,6 +30,20 @@ add_action(
 		qs_seed_terms();
 		flush_rewrite_rules();
 	}
+);
+
+/* Theme files updated (no re-activation): add the new categories once. */
+add_action(
+	'init',
+	function () {
+		if ( (int) get_option( 'qs_terms_version' ) >= QS_TERMS_VERSION || get_transient( 'qs_seeding' ) ) {
+			return;
+		}
+		set_transient( 'qs_seeding', 1, 10 * MINUTE_IN_SECONDS );
+		qs_seed_terms();
+		delete_transient( 'qs_seeding' );
+	},
+	20
 );
 
 /* Moving from the "Quick Sale" theme: keep its Customizer settings (logo, hero image, contact numbers…). */

@@ -26,7 +26,9 @@ if ( $edit && ( 'listing' !== get_post_type( $edit ) || (int) get_post_field( 'p
 	$edit = 0;
 }
 $val     = qs_post_values( $edit );
-$section = $val['section'] ?? ( isset( qs_sections()[ qs_f( 'section' ) ] ) ? qs_f( 'section' ) : '' );
+$section = $val['section'] ?? ( qs_is_section( qs_f( 'section' ) ) ? qs_f( 'section' ) : '' );
+$main    = $val['main'] ?? ( isset( qs_sections()[ $section ] ) || 'cars' === qs_f( 'main' ) ? 'cars' : $section );
+$secs    = array_merge( array_keys( qs_sections() ), array_filter( wp_list_pluck( qs_nav(), 'slug' ), fn( $s ) => 'cars' !== $s ) );
 $v       = fn( $k ) => $val[ $k ] ?? '';
 $req     = '<em class="req">' . esc_html( qs_t( 'required' ) ) . '</em>';
 $head( $edit ? qs_t( 'edit' ) . ' — ' . qs_title( $edit ) : qs_t( 'post_title' ) );
@@ -38,7 +40,7 @@ foreach ( qs_children( 0, 'qs_make' ) as $mk ) {
 }
 
 /* One field for one group. */
-$field = function ( $k, $f, $g ) use ( $v, $req ) {
+$field = function ( $k, $f, $g ) use ( $v, $req, $secs ) {
 	$is_req = in_array( $g, explode( ' ', $f[3] ), true );
 	$label  = '<span>' . esc_html( qs_t( qs_field_label( $k, $g ) ) ) . ( $is_req ? ' <i>*</i>' : '' ) . '</span>';
 	$attr   = ' data-g="' . esc_attr( $g ) . '"' . ( $is_req ? ' data-required' : '' );
@@ -80,7 +82,7 @@ $field = function ( $k, $f, $g ) use ( $v, $req ) {
 		$h .= '</select>';
 	} elseif ( 'itype' === $kind ) {
 		$h  = '<label class="fld"' . $attr . ' data-hide-empty>' . $label . '<select name="itype" data-dep="sub"><option value="">' . esc_html( qs_t( 'pick' ) ) . '</option>';
-		foreach ( array( 'spare-parts', 'accessories', 'tools' ) as $sec ) {
+		foreach ( array_merge( array( 'spare-parts', 'accessories', 'tools' ), array_slice( $secs, 5 ) ) as $sec ) {
 			foreach ( qs_children( $sec ) as $sub ) {
 				foreach ( qs_children( $sub ) as $it ) {
 					$h .= '<option value="' . esc_attr( $it->slug ) . '" data-p="' . esc_attr( $sub->slug ) . '"' . selected( $cur, $it->slug, false ) . '>' . esc_html( qs_term_name( $it ) ) . '</option>';
@@ -109,16 +111,22 @@ $field = function ( $k, $f, $g ) use ( $v, $req ) {
 		<script type="application/json" id="qs-models-data"><?php echo wp_json_encode( $models ); ?></script><datalist id="qs-models"></datalist>
 
 		<div class="post-card"><h2><span class="step-n">1</span> <?php qs_e( 'choose_section' ); ?></h2>
+			<div class="type-grid mains">
+				<?php foreach ( qs_nav() as $n ) : ?>
+				<label class="type-card sec-card main-card<?php echo $main === $n['slug'] ? ' on' : ''; ?>"><input type="radio" name="main" value="<?php echo esc_attr( $n['slug'] ); ?>" data-group="<?php echo esc_attr( qs_group_of( $n['slug'] ) ); ?>"<?php checked( $main, $n['slug'] ); ?> hidden><span class="sc-ic"><?php echo qs_ic( $n['icon'] ); ?></span><b><?php echo esc_html( $n['label'] ); ?></b><i class="tc-check"><?php echo qs_ic( 'check' ); ?></i></label>
+				<?php endforeach; ?>
+			</div>
+			<div class="car-secs" data-car-secs<?php echo 'cars' === $main ? '' : ' hidden'; ?>><h3><?php qs_e( 'choose_car_sec' ); ?></h3>
 			<div class="type-grid five">
 				<?php foreach ( qs_sections() as $slug => $x ) : $t = qs_term( $slug ); if ( ! $t ) { continue; } ?>
 				<label class="type-card sec-card<?php echo $section === $slug ? ' on' : ''; ?>"><input type="radio" name="section" value="<?php echo esc_attr( $slug ); ?>" data-group="<?php echo esc_attr( $x[2] ); ?>"<?php checked( $section, $slug ); ?> hidden><span class="sc-ic"><?php echo qs_ic( $x[1] ); ?></span><b><?php echo esc_html( qs_term_name( $t ) ); ?></b><small><?php qs_e( 'd_' . str_replace( '-', '_', $slug ) ); ?></small><i class="tc-check"><?php echo qs_ic( 'check' ); ?></i></label>
 				<?php endforeach; ?>
-			</div>
+			</div></div>
 		</div>
 
 		<div class="post-card" data-after-type<?php echo $section ? '' : ' hidden'; ?>><h2><span class="step-n">2</span> <?php qs_e( 'details' ); ?></h2>
 			<div class="form-grid">
-				<?php foreach ( qs_sections() as $slug => $x ) : ?>
+				<?php foreach ( $secs as $slug ) : ?>
 				<label class="fld" data-sec="<?php echo esc_attr( $slug ); ?>" data-required><span><?php qs_e( 'subsection' ); ?> <i>*</i></span><select name="sub"><option value=""><?php qs_e( 'choose_sub' ); ?></option><?php foreach ( qs_children( $slug ) as $c ) { echo '<option value="' . esc_attr( $c->slug ) . '"' . selected( $v( 'sub' ), $c->slug, false ) . '>' . esc_html( qs_term_name( $c ) ) . '</option>'; } ?></select><?php echo $req; // phpcs:ignore ?></label>
 				<?php endforeach; ?>
 				<?php
