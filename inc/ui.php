@@ -151,7 +151,7 @@ function qs_city_label( $id ) {
 		}
 	}
 	$em = $city->parent ? get_term( $city->parent, 'qs_city' ) : null;
-	return qs_term_name( $city ) . ( $em ? '، ' . qs_term_name( $em ) : '' );
+	return qs_term_name( $city ) . ( $em ? ( 'en' === qs_lang() ? ', ' : '، ' ) . qs_term_name( $em ) : '' );
 }
 /** Label of an option value ("Arabic|English" lists in inc/data.php). */
 function qs_opt( $list, $val ) {
@@ -218,6 +218,22 @@ function qs_fav_btn( $id, $wide = false ) {
 }
 
 /* ---------- Card (fields per group, as in the spreadsheet) ---------- */
+/** The key facts shown on an ad card, as [icon, text] (website card and app list). */
+function qs_card_facts( $id ) {
+	$group = qs_group( $id );
+	$out   = array();
+	if ( 'vehicle' === $group ) {
+		if ( $y = qs_m( $id, 'year' ) ) {
+			$out[] = array( 'cal', (string) $y );
+		}
+		if ( '' !== ( $k = qs_m( $id, 'km' ) ) ) {
+			$out[] = array( 'gauge', qs_fmt( $k ) . ' ' . qs_t( 'km' ) );
+		}
+	} elseif ( in_array( $group, array( 'item', 'general' ), true ) && ( $c = qs_m( $id, 'cond' ) ) ) {
+		$out[] = array( 'tag', qs_opt( 'item_cond', $c ) );
+	}
+	return $out;
+}
 function qs_card( $id ) {
 	$group = qs_group( $id );
 	$url   = get_permalink( $id );
@@ -229,25 +245,64 @@ function qs_card( $id ) {
 		$badge .= '<span class="b b-k">' . esc_html( qs_t( 'wanted' ) ) . '</span>';
 	}
 	/* Card = photo, price, name, at most two key facts, and the contact buttons. Everything else is on the ad page. */
-	if ( 'vehicle' === $group ) {
-		$attrs = array(
-			( $y = qs_m( $id, 'year' ) ) ? qs_ic( 'cal', 'sm' ) . ' ' . esc_html( $y ) : '',
-			'' !== ( $k = qs_m( $id, 'km' ) ) ? qs_ic( 'gauge', 'sm' ) . ' ' . qs_fmt( $k ) . ' ' . esc_html( qs_t( 'km' ) ) : '',
-		);
-		$top = qs_price( $id );
-	} elseif ( 'item' === $group || 'general' === $group ) {
-		$attrs = array( ( $c = qs_m( $id, 'cond' ) ) ? qs_ic( 'tag', 'sm' ) . ' ' . esc_html( qs_opt( 'item_cond', $c ) ) : '' );
-		$top   = qs_price( $id );
-	} else {
-		$attrs = array();
-		$top   = '<span class="svc-sec">' . qs_ic( 'wrench', 'sm' ) . ' ' . esc_html( qs_term_name( $lv[1] ) ) . '</span>';
-	}
-	$attrs = array_filter( $attrs );
+	$top   = 'service' === $group ? '<span class="svc-sec">' . qs_ic( 'wrench', 'sm' ) . ' ' . esc_html( qs_term_name( $lv[1] ) ) . '</span>' : qs_price( $id );
+	$attrs = array_map( fn( $f ) => qs_ic( $f[0], 'sm' ) . ' ' . esc_html( $f[1] ), qs_card_facts( $id ) );
 	$acts  = $phone ? '<div class="c-acts"><a class="btn btn-sm btn-line c-call" href="tel:+' . esc_attr( $phone ) . '" aria-label="' . esc_attr( qs_t( 'call' ) . ' ' . qs_phone_fmt( $phone ) ) . '">' . qs_ic( 'phone' ) . '<span class="c-lbl">' . esc_html( qs_t( 'call' ) ) . '</span></a><a class="btn btn-sm btn-wa" href="' . esc_url( qs_wa_link( $phone, qs_title( $id ) . ' — ' . $url ) ) . '" target="_blank" rel="noopener" aria-label="WhatsApp">' . qs_ic( 'wa' ) . '<span class="c-lbl">' . esc_html( qs_t( 'whatsapp' ) ) . '</span></a></div>' : '';
 	return '<article class="card dz qs-card g-' . esc_attr( $group ) . ( qs_m( $id, 'featured' ) ? ' is-feat' : '' ) . '"><a class="stretch" href="' . esc_url( $url ) . '" aria-label="' . esc_attr( qs_title( $id ) ) . '"></a>
     <div class="media">' . qs_media( $id ) . '<div class="badges">' . $badge . '</div>' . qs_fav_btn( $id ) . '</div>
     <div class="cbody"><div class="cprice">' . $top . '</div><h3>' . esc_html( qs_title( $id ) ) . '</h3>
       ' . ( $attrs ? '<div class="cattrs">' . implode( '', array_map( fn( $x ) => '<span>' . $x . '</span>', $attrs ) ) . '</div>' : '' ) . $acts . '</div></article>';
+}
+
+/** Details of an ad as [label, value] rows, in the current language (ad page and app). */
+function qs_ad_specs( $id ) {
+	$group = qs_group( $id );
+	$lv    = qs_levels( $id );
+	list( $make, $model ) = qs_make_model( $id );
+	$addr  = trim( qs_city_label( $id ) . ( qs_m( $id, 'area' ) ? ' — ' . qs_m( $id, 'area' ) : '' ) );
+	$rows = array();
+	$add  = function ( $label, $val ) use ( &$rows ) {
+		if ( '' !== trim( (string) $val ) ) {
+			$rows[] = array( $label, $val );
+		}
+	};
+	$add( qs_t( 'subsection' ), qs_term_name( $lv[1] ) );
+	if ( 'vehicle' === $group ) {
+		$add( qs_t( 'make' ), $make ? qs_term_name( $make ) : '' );
+		$add( qs_t( 'model' ), qs_model_label( $id, $model ) );
+		$add( qs_t( 'year' ), qs_m( $id, 'year' ) );
+		$body = qs_m( $id, 'body' );
+		if ( $body ) {
+			foreach ( qs_body_options()[ $lv[1] ? $lv[1]->slug : '' ] ?? array() as $o ) {
+				$p = explode( '|', $o );
+				if ( $p[0] === $body ) {
+					$add( qs_t( 'body' ), 'en' === qs_lang() ? $p[2] : $p[1] );
+				}
+			}
+		}
+		$add( qs_t( 'condition' ), qs_m( $id, 'cond' ) ? qs_opt( 'cond', qs_m( $id, 'cond' ) ) : '' );
+		$add( qs_t( 'kms' ), '' !== qs_m( $id, 'km' ) ? qs_fmt( qs_m( $id, 'km' ) ) . ' ' . qs_t( 'km' ) : '' );
+		foreach ( array( 'gear', 'fuel', 'cyl', 'specs', 'color' ) as $k ) {
+			$add( qs_t( $k ), '' !== qs_m( $id, $k ) ? qs_opt( $k, qs_m( $id, $k ) ) : '' );
+		}
+		$add( qs_t( 'deal' ), qs_m( $id, 'deal' ) ? qs_opt( 'deal', qs_m( $id, 'deal' ) ) : '' );
+		$add( qs_t( 'period' ), qs_m( $id, 'period' ) ? qs_opt( 'period', qs_m( $id, 'period' ) ) : '' );
+	} elseif ( 'general' === $group ) {
+		$add( qs_t( 'cat_detail' ), qs_term_name( $lv[2] ) );
+		$add( qs_t( 'condition' ), qs_m( $id, 'cond' ) ? qs_opt( 'item_cond', qs_m( $id, 'cond' ) ) : '' );
+	} elseif ( 'item' === $group ) {
+		$add( qs_t( 'item_type' ), qs_term_name( $lv[2] ) );
+		$add( qs_t( 'part_brand' ), qs_m( $id, 'brand' ) );
+		$add( qs_t( 'compat_make' ), $make ? qs_term_name( $make ) : '' );
+		$add( qs_t( 'compat_model' ), qs_model_label( $id, $model ) );
+		$add( qs_t( 'compat_year' ), qs_m( $id, 'year' ) );
+		$add( qs_t( 'condition' ), qs_m( $id, 'cond' ) ? qs_opt( 'item_cond', qs_m( $id, 'cond' ) ) : '' );
+		$add( qs_t( 'part_type' ), qs_m( $id, 'part_type' ) ? qs_opt( 'part_type', qs_m( $id, 'part_type' ) ) : '' );
+		$add( qs_t( 'sku' ), qs_m( $id, 'sku' ) );
+	}
+	$add( qs_t( 'location' ), $addr );
+	$add( qs_t( 'ad_no' ), 'QS-' . ( 1000 + $id ) );
+	return $rows;
 }
 
 function qs_sec_head( $h, $link = '', $icon = '' ) {

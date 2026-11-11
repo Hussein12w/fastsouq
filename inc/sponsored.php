@@ -171,17 +171,7 @@ function qs_main_slug( $term ) {
  */
 function qs_sponsored( $place, $term = null ) {
 	static $used = array();
-	$main = qs_main_slug( $term );
-	$ids  = get_posts( array( 'post_type' => 'qs_banner', 'post_status' => 'publish', 'fields' => 'ids', 'posts_per_page' => 50, 'no_found_rows' => true, 'meta_query' => array( array( 'key' => '_qsb_places', 'value' => '"' . $place . '"', 'compare' => 'LIKE' ) ) ) );
-	$ids  = array_values(
-		array_filter(
-			$ids,
-			function ( $id ) use ( $main, $used ) {
-				$cats = array_filter( (array) get_post_meta( $id, '_qsb_cats', true ) );
-				return ! in_array( $id, $used, true ) && qs_banner_live( $id ) && ( ! $cats || ( $main && in_array( $main, $cats, true ) ) );
-			}
-		)
-	);
+	$ids = qs_sponsored_ids( $place, $term, $used );
 	if ( ! $ids ) {
 		if ( in_array( $place, array( 'cat_side', 'ad_side' ), true ) && get_theme_mod( 'qs_ad_placeholder', 1 ) ) {
 			$wa   = preg_replace( '/\D/', '', (string) get_theme_mod( 'qs_whatsapp', '' ) );
@@ -192,13 +182,39 @@ function qs_sponsored( $place, $term = null ) {
 	}
 	$id     = $ids[ array_rand( $ids ) ];
 	$used[] = $id;
+	return qs_sponsored_html( $id, $place );
+}
+/** The banners running in a place for a category (ids), without the ones already shown on this page. */
+function qs_sponsored_ids( $place, $term = null, $used = array() ) {
+	$main = qs_main_slug( $term );
+	$ids  = get_posts( array( 'post_type' => 'qs_banner', 'post_status' => 'publish', 'fields' => 'ids', 'posts_per_page' => 50, 'no_found_rows' => true, 'meta_query' => array( array( 'key' => '_qsb_places', 'value' => '"' . $place . '"', 'compare' => 'LIKE' ) ) ) );
+	return array_values(
+		array_filter(
+			$ids,
+			function ( $id ) use ( $main, $used ) {
+				$cats = array_filter( (array) get_post_meta( $id, '_qsb_cats', true ) );
+				return ! in_array( $id, $used, true ) && qs_banner_live( $id ) && ( ! $cats || ( $main && in_array( $main, $cats, true ) ) );
+			}
+		)
+	);
+}
+/** Banner data (website and app); counts a view. */
+function qs_sponsored_data( $id ) {
 	update_post_meta( $id, '_qsb_views', (int) get_post_meta( $id, '_qsb_views', true ) + 1 );
-	$desk   = get_the_post_thumbnail_url( $id, 'full' );
-	$mob    = get_post_meta( $id, '_qsb_mobile', true );
-	$url    = get_post_meta( $id, '_qsb_url', true );
-	$img    = '<picture>' . ( $mob ? '<source media="(max-width:700px)" srcset="' . esc_url( $mob ) . '">' : '' ) . '<img src="' . esc_url( $desk ) . '" alt="' . esc_attr( get_the_title( $id ) ) . '" loading="lazy"></picture>';
-	$blank  = '0' !== (string) get_post_meta( $id, '_qsb_blank', true );
-	$inner  = $url ? '<a href="' . esc_url( add_query_arg( 'qs_bn', $id, home_url( '/' ) ) ) . '" rel="sponsored nofollow noopener"' . ( $blank ? ' target="_blank"' : '' ) . '>' . $img . '</a>' : $img;
+	$url = get_post_meta( $id, '_qsb_url', true );
+	return array(
+		'id'           => (int) $id,
+		'title'        => get_the_title( $id ),
+		'image'        => get_the_post_thumbnail_url( $id, 'full' ),
+		'image_mobile' => get_post_meta( $id, '_qsb_mobile', true ) ?: '',
+		'link'         => $url ? add_query_arg( 'qs_bn', $id, home_url( '/' ) ) : '',
+		'new_tab'      => '0' !== (string) get_post_meta( $id, '_qsb_blank', true ),
+	);
+}
+function qs_sponsored_html( $id, $place ) {
+	$d      = qs_sponsored_data( $id );
+	$img    = '<picture>' . ( $d['image_mobile'] ? '<source media="(max-width:700px)" srcset="' . esc_url( $d['image_mobile'] ) . '">' : '' ) . '<img src="' . esc_url( $d['image'] ) . '" alt="' . esc_attr( $d['title'] ) . '" loading="lazy"></picture>';
+	$inner  = $d['link'] ? '<a href="' . esc_url( $d['link'] ) . '" rel="sponsored nofollow noopener"' . ( $d['new_tab'] ? ' target="_blank"' : '' ) . '>' . $img . '</a>' : $img;
 	return '<div class="spons spons-' . esc_attr( $place ) . '">' . $inner . '<span class="spons-lbl">' . esc_html( qs_t( 'sponsored' ) ) . '</span></div>';
 }
 /* Click counter, then on to the advertiser. */

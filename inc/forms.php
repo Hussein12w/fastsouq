@@ -215,22 +215,22 @@ add_action(
 	}
 );
 add_action( 'wp_ajax_qs_guest_check', fn() => wp_send_json( array( 'ok' => true, 'exists' => false, 'err' => '' ) ) );
-/** Signs the advertiser in (existing account) or creates the account; returns the user id. */
-function qs_guest_account() {
+/** Signs the advertiser in (existing account) or creates the account. Returns the user id or a WP_Error (code = text key). */
+function qs_guest_account( $cookie = true ) {
 	if ( '' !== qs_req( 'company_site' ) ) { // filled only by bots
-		qs_back( home_url( '/' ) );
+		return new WP_Error( 'spam' );
 	}
 	list( $phone, $name, $pass, $email ) = qs_guest_fields();
 	$r = qs_guest_check( $phone, $name, $pass, $email );
 	if ( ! $r['ok'] ) {
-		qs_back( qs_page_url( 'post' ), array( 'qs_err' => $r['err'] ) );
+		return new WP_Error( $r['err'] );
 	}
 	if ( $r['exists'] ) {
 		$uid = qs_user_by_phone( $phone );
 	} else {
 		$uid = wp_insert_user( array( 'user_login' => $phone, 'user_pass' => $pass, 'user_email' => $email, 'display_name' => $name, 'nickname' => $name, 'first_name' => $name, 'role' => 'subscriber' ) );
 		if ( is_wp_error( $uid ) ) {
-			qs_back( qs_page_url( 'post' ), array( 'qs_err' => 'reg_err_exists' ) );
+			return new WP_Error( 'reg_err_exists' );
 		}
 		update_user_meta( $uid, 'qs_phone', $phone );
 		update_user_meta( $uid, 'qs_from_ad', 1 );
@@ -238,7 +238,9 @@ function qs_guest_account() {
 		$GLOBALS['qs_new_account'] = 1;
 	}
 	wp_set_current_user( $uid );
-	wp_set_auth_cookie( $uid, true, is_ssl() );
+	if ( $cookie ) {
+		wp_set_auth_cookie( $uid, true, is_ssl() );
+	}
 	return (int) $uid;
 }
 
@@ -249,20 +251,36 @@ function qs_handle_post_ad() {
 	qs_nonce( 'qs_post_ad' );
 	$uid  = is_user_logged_in() ? get_current_user_id() : 0;
 	$edit = $uid ? absint( $_POST['edit'] ?? 0 ) : 0;
-	if ( $edit && ( 'listing' !== get_post_type( $edit ) || (int) get_post_field( 'post_author', $edit ) !== $uid ) ) {
-		wp_die( 'Not allowed', 403 );
+	$main = qs_req( 'main' );
+	$back = qs_page_url( 'post', $edit ? array( 'edit' => $edit ) : array( 'section' => 'cars' === $main ? qs_req( 'section' ) : $main ) );
+	$r    = qs_save_ad( $uid, $edit, true );
+	if ( is_wp_error( $r ) ) {
+		if ( 'not_allowed' === $r->get_error_code() ) {
+			wp_die( 'Not allowed', 403 );
+		}
+		qs_back( 'spam' === $r->get_error_code() ? home_url( '/' ) : ( $uid ? $back : qs_page_url( 'post' ) ), array( 'qs_err' => $r->get_error_code() ) );
+	}
+	qs_back( qs_page_url( 'post' ), array( 'done' => $r, 'edited' => $edit ? 1 : '', 'newacc' => empty( $GLOBALS['qs_new_account'] ) ? '' : 1 ) );
+}
+/**
+ * Saves a new or edited ad from the posted fields ($_POST / $_FILES): the website form and the app use it.
+ * $uid 0 = no account yet (the account is made from the ad's phone). Returns the ad id or a WP_Error (code = text key).
+ * Photos: new uploads in "photos[]"; "keep_photos" (ids, comma separated) keeps some of the current ones when editing.
+ */
+function qs_save_ad( $uid, $edit = 0, $cookie = true ) {
+	if ( $edit && ( 'listing' !== get_post_type( $edit ) || (int) get_post_field( 'post_author', $edit ) !== (int) $uid ) ) {
+		return new WP_Error( 'not_allowed' );
 	}
 	$main    = qs_req( 'main' );
 	$section = 'cars' === $main ? qs_req( 'section' ) : $main;
-	$back    = qs_page_url( 'post', $edit ? array( 'edit' => $edit ) : array( 'section' => $section ) );
 	if ( ! qs_is_section( $section ) ) {
-		qs_back( $back, array( 'qs_err' => 'err_required' ) );
+		return new WP_Error( 'err_required' );
 	}
 	$group = qs_group_of( $section );
 	$sec_t = qs_term( $section );
 	$sub   = qs_term( (string) qs_req( 'sub' ) );
 	if ( ! $sec_t || ! $sub || (int) $sub->parent !== (int) $sec_t->term_id ) {
-		qs_back( $back, array( 'qs_err' => 'err_required' ) );
+		return new WP_Error( 'err_required' );
 	}
 	$v = array();
 	foreach ( qs_fields() as $k => $f ) {
@@ -271,25 +289,28 @@ function qs_handle_post_ad() {
 		}
 		$v[ $k ] = 'desc' === $k ? sanitize_textarea_field( wp_unslash( $_POST['desc'] ?? '' ) ) : qs_req( $k );
 		if ( in_array( $group, explode( ' ', $f[3] ), true ) && '' === $v[ $k ] ) {
-			qs_back( $back, array( 'qs_err' => 'err_required' ) );
+			return new WP_Error( 'err_required' );
 		}
 	}
 	$emirate = qs_term( (string) qs_req( 'emirate' ), 'qs_city' );
 	$city    = qs_term( (string) qs_req( 'city' ), 'qs_city' );
 	$phone   = qs_phone_norm( qs_req( 'phone' ) ) ?: get_user_meta( $uid, 'qs_phone', true );
 	if ( ! $emirate || ! $phone ) {
-		qs_back( $back, array( 'qs_err' => 'err_required' ) );
+		return new WP_Error( 'err_required' );
 	}
 	if ( empty( $_POST['agree'] ) ) {
-		qs_back( $back, array( 'qs_err' => 'err_agree' ) );
+		return new WP_Error( 'err_agree' );
 	}
 	if ( ! $uid ) {
-		$uid = qs_guest_account(); // the ad is valid: sign in or create the account now
+		$uid = qs_guest_account( $cookie ); // the ad is valid: sign in or create the account now
+		if ( is_wp_error( $uid ) ) {
+			return $uid;
+		}
 	}
 	if ( ! $edit ) {
 		$today = get_posts( array( 'post_type' => 'listing', 'author' => $uid, 'post_status' => 'any', 'fields' => 'ids', 'posts_per_page' => 50, 'date_query' => array( array( 'after' => '24 hours ago' ) ) ) );
 		if ( count( $today ) >= absint( get_theme_mod( 'qs_daily_limit', 10 ) ) ) {
-			qs_back( $back, array( 'qs_err' => 'err_limit' ) );
+			return new WP_Error( 'err_limit' );
 		}
 	}
 	$arr = array( 'post_type' => 'listing', 'post_title' => $v['title'], 'post_content' => $v['desc'] ?? '', 'post_status' => 'pending', 'post_author' => $uid );
@@ -298,7 +319,7 @@ function qs_handle_post_ad() {
 	}
 	$id = wp_insert_post( $arr, true );
 	if ( is_wp_error( $id ) ) {
-		qs_back( $back, array( 'qs_err' => 'err_required' ) );
+		return new WP_Error( 'err_required' );
 	}
 	/* Section → sub-section → item type. */
 	$cats  = array( $sec_t->term_id, $sub->term_id );
@@ -344,9 +365,14 @@ function qs_handle_post_ad() {
 		update_post_meta( $id, '_qs_featured', 0 );
 		update_post_meta( $id, '_qs_views', 0 );
 	}
-	if ( ! empty( $_FILES['photos']['name'][0] ) ) {
-		$ids = array();
-		foreach ( array_keys( (array) $_FILES['photos']['name'] ) as $i ) {
+	$keep = array_filter( array_map( 'absint', explode( ',', (string) qs_req( 'keep_photos' ) ) ) );
+	if ( $edit && $keep ) { // app: keep some of the current photos, add the new ones
+		$cur  = array_merge( array( get_post_thumbnail_id( $id ) ), (array) get_post_meta( $id, '_qs_gallery', true ) );
+		$keep = array_values( array_intersect( $keep, array_map( 'intval', $cur ) ) );
+	}
+	if ( ! empty( $_FILES['photos']['name'][0] ) || ( $edit && '' !== qs_req( 'keep_photos' ) ) ) {
+		$ids = $keep;
+		foreach ( array_keys( (array) ( $_FILES['photos']['name'] ?? array() ) ) as $i ) {
 			if ( count( $ids ) >= 10 ) {
 				break;
 			}
@@ -356,11 +382,13 @@ function qs_handle_post_ad() {
 		}
 		if ( $ids ) {
 			set_post_thumbnail( $id, $ids[0] );
-			update_post_meta( $id, '_qs_gallery', $ids );
+		} else {
+			delete_post_thumbnail( $id );
 		}
+		update_post_meta( $id, '_qs_gallery', $ids );
 	}
 	wp_mail( get_option( 'admin_email' ), '[' . qs_t( 'site_name' ) . '] ' . ( $edit ? 'Ad edited' : 'New ad' ) . ' — ' . $v['title'], admin_url( 'post.php?post=' . $id . '&action=edit' ) );
-	qs_back( qs_page_url( 'post' ), array( 'done' => $id, 'edited' => $edit ? 1 : '', 'newacc' => empty( $GLOBALS['qs_new_account'] ) ? '' : 1 ) );
+	return (int) $id;
 }
 function qs_upload( $field, $post_id, $i ) {
 	require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -396,16 +424,20 @@ function qs_handle_report() {
 		qs_back( home_url( '/' ) );
 	}
 	if ( empty( $_COOKIE[ 'qs_r' . $id ] ) ) {
-		$list   = (array) get_post_meta( $id, '_qs_report_list', true );
-		$list[] = array( 'reason' => qs_req( 'reason' ), 'time' => time() );
-		update_post_meta( $id, '_qs_report_list', array_slice( array_filter( $list ), -50 ) );
-		$n = (int) get_post_meta( $id, '_qs_reports', true ) + 1;
-		update_post_meta( $id, '_qs_reports', $n );
+		qs_report_ad( $id, qs_req( 'reason' ) );
 		setcookie( 'qs_r' . $id, '1', time() + MONTH_IN_SECONDS, COOKIEPATH ?: '/' );
-		if ( $n >= 3 && 'publish' === get_post_status( $id ) ) {
-			wp_update_post( array( 'ID' => $id, 'post_status' => 'pending' ) );
-		}
-		wp_mail( get_option( 'admin_email' ), '[' . qs_t( 'site_name' ) . '] Report #' . $id, qs_req( 'reason' ) . "\n" . admin_url( 'post.php?post=' . $id . '&action=edit' ) );
 	}
 	qs_back( get_permalink( $id ) ?: home_url( '/' ), array( 'qs_msg' => 'report_ok' ) );
+}
+/** Records a report; 3 reports hide the ad until reviewed (website and app). */
+function qs_report_ad( $id, $reason ) {
+	$list   = (array) get_post_meta( $id, '_qs_report_list', true );
+	$list[] = array( 'reason' => $reason, 'time' => time() );
+	update_post_meta( $id, '_qs_report_list', array_slice( array_filter( $list ), -50 ) );
+	$n = (int) get_post_meta( $id, '_qs_reports', true ) + 1;
+	update_post_meta( $id, '_qs_reports', $n );
+	if ( $n >= 3 && 'publish' === get_post_status( $id ) ) {
+		wp_update_post( array( 'ID' => $id, 'post_status' => 'pending' ) );
+	}
+	wp_mail( get_option( 'admin_email' ), '[' . qs_t( 'site_name' ) . '] Report #' . $id, $reason . "\n" . admin_url( 'post.php?post=' . $id . '&action=edit' ) );
 }

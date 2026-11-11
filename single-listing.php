@@ -15,49 +15,8 @@ $lng    = qs_m( $id, 'lng' );
 $addr   = trim( qs_city_label( $id ) . ( qs_m( $id, 'area' ) ? ' — ' . qs_m( $id, 'area' ) : '' ) );
 $photos = array_values( array_unique( array_filter( array_merge( array( get_post_thumbnail_id( $id ) ), (array) qs_m( $id, 'gallery' ) ) ) ) );
 
-/* Details table — the fields of this ad's group. */
-$rows = array();
-$add  = function ( $label, $val ) use ( &$rows ) {
-	if ( '' !== trim( (string) $val ) ) {
-		$rows[] = array( $label, $val );
-	}
-};
-$add( qs_t( 'subsection' ), qs_term_name( $lv[1] ) );
-if ( 'vehicle' === $group ) {
-	$add( qs_t( 'make' ), $make ? qs_term_name( $make ) : '' );
-	$add( qs_t( 'model' ), qs_model_label( $id, $model ) );
-	$add( qs_t( 'year' ), qs_m( $id, 'year' ) );
-	$body = qs_m( $id, 'body' );
-	if ( $body ) {
-		foreach ( qs_body_options()[ $lv[1] ? $lv[1]->slug : '' ] ?? array() as $o ) {
-			$p = explode( '|', $o );
-			if ( $p[0] === $body ) {
-				$add( qs_t( 'body' ), 'en' === qs_lang() ? $p[2] : $p[1] );
-			}
-		}
-	}
-	$add( qs_t( 'condition' ), qs_m( $id, 'cond' ) ? qs_opt( 'cond', qs_m( $id, 'cond' ) ) : '' );
-	$add( qs_t( 'kms' ), '' !== qs_m( $id, 'km' ) ? qs_fmt( qs_m( $id, 'km' ) ) . ' ' . qs_t( 'km' ) : '' );
-	foreach ( array( 'gear', 'fuel', 'cyl', 'specs', 'color' ) as $k ) {
-		$add( qs_t( $k ), '' !== qs_m( $id, $k ) ? qs_opt( $k, qs_m( $id, $k ) ) : '' );
-	}
-	$add( qs_t( 'deal' ), qs_m( $id, 'deal' ) ? qs_opt( 'deal', qs_m( $id, 'deal' ) ) : '' );
-	$add( qs_t( 'period' ), qs_m( $id, 'period' ) ? qs_opt( 'period', qs_m( $id, 'period' ) ) : '' );
-} elseif ( 'general' === $group ) {
-	$add( qs_t( 'cat_detail' ), qs_term_name( $lv[2] ) );
-	$add( qs_t( 'condition' ), qs_m( $id, 'cond' ) ? qs_opt( 'item_cond', qs_m( $id, 'cond' ) ) : '' );
-} elseif ( 'item' === $group ) {
-	$add( qs_t( 'item_type' ), qs_term_name( $lv[2] ) );
-	$add( qs_t( 'part_brand' ), qs_m( $id, 'brand' ) );
-	$add( qs_t( 'compat_make' ), $make ? qs_term_name( $make ) : '' );
-	$add( qs_t( 'compat_model' ), qs_model_label( $id, $model ) );
-	$add( qs_t( 'compat_year' ), qs_m( $id, 'year' ) );
-	$add( qs_t( 'condition' ), qs_m( $id, 'cond' ) ? qs_opt( 'item_cond', qs_m( $id, 'cond' ) ) : '' );
-	$add( qs_t( 'part_type' ), qs_m( $id, 'part_type' ) ? qs_opt( 'part_type', qs_m( $id, 'part_type' ) ) : '' );
-	$add( qs_t( 'sku' ), qs_m( $id, 'sku' ) );
-}
-$add( qs_t( 'location' ), $addr );
-$add( qs_t( 'ad_no' ), 'QS-' . ( 1000 + $id ) );
+/* Details table — the fields of this ad's group (shared with the app API). */
+$rows = qs_ad_specs( $id );
 $similar = get_posts( array( 'post_type' => 'listing', 'fields' => 'ids', 'posts_per_page' => 5, 'post__not_in' => array( $id ), 'tax_query' => array( array( 'taxonomy' => 'qs_cat', 'terms' => ( $lv[2] ?: $lv[1] ?: $lv[0] )->term_id ?? 0 ) ) ) );
 $crumbs  = array();
 if ( $lv[0] && isset( qs_sections()[ $lv[0]->slug ] ) && ( $cars = qs_term( 'cars' ) ) ) {

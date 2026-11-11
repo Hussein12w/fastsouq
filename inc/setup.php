@@ -173,64 +173,75 @@ add_action(
 		}
 		$q->set( 'post_type', 'listing' );
 		$q->set( 'posts_per_page', 24 );
-		$meta = array( 'relation' => 'AND', 'feat' => array( 'key' => '_qs_featured', 'type' => 'NUMERIC' ), 'bump' => array( 'key' => '_qs_bump', 'type' => 'NUMERIC' ) );
-		$tax  = array();
-		if ( $g = qs_f( 'group' ) ) {
-			$meta[] = array( 'key' => '_qs_group', 'value' => $g );
-		}
-		foreach ( array( 'body', 'cond', 'gear', 'fuel', 'cyl', 'specs', 'color', 'part_type', 'deal' ) as $k ) {
-			if ( '' !== ( $v = qs_f( $k ) ) ) {
-				$meta[] = array( 'key' => '_qs_' . $k, 'value' => $v );
-			}
-		}
-		foreach ( array( 'year' => array( 'ymin', 'ymax' ), 'price' => array( 'pmin', 'pmax' ), 'km' => array( 'kmin', 'kmax' ) ) as $k => $r ) {
-			if ( '' !== qs_f( $r[0] ) && is_numeric( qs_f( $r[0] ) ) ) {
-				$meta[] = array( 'key' => '_qs_' . $k, 'value' => (float) qs_f( $r[0] ), 'compare' => '>=', 'type' => 'NUMERIC' );
-			}
-			if ( '' !== qs_f( $r[1] ) && is_numeric( qs_f( $r[1] ) ) ) {
-				$meta[] = array( 'key' => '_qs_' . $k, 'value' => (float) qs_f( $r[1] ), 'compare' => '<=', 'type' => 'NUMERIC' );
-			}
-		}
-		if ( $b = qs_f( 'brand' ) ) {
-			$meta[] = array( 'key' => '_qs_brand', 'value' => $b, 'compare' => 'LIKE' );
-		}
-		$q->set( 'meta_query', $meta );
-		foreach ( array( 'sec' => 'qs_cat', 'cat' => 'qs_cat', 'itype' => 'qs_cat', 'model' => 'qs_make', 'make' => 'qs_make', 'city' => 'qs_city', 'emirate' => 'qs_city' ) as $k => $t ) {
-			if ( $v = qs_f( $k ) ) {
-				if ( 'make' === $k && qs_f( 'model' ) ) {
-					continue;
-				}
-				if ( 'emirate' === $k && qs_f( 'city' ) ) {
-					continue;
-				}
-				if ( 'sec' === $k && ( qs_f( 'cat' ) || qs_f( 'itype' ) ) ) {
-					continue;
-				}
-				if ( 'cat' === $k && qs_f( 'itype' ) ) {
-					continue;
-				}
-				$tax[] = array( 'taxonomy' => $t, 'field' => 'slug', 'terms' => $v );
-			}
-		}
-		if ( $tax ) {
-			$q->set( 'tax_query', $tax );
-		}
-		$sort = qs_f( 'sort' );
-		if ( 'asc' === $sort || 'desc' === $sort ) {
-			$q->set( 'meta_key', '_qs_price' );
-			$q->set( 'orderby', array( 'meta_value_num' => strtoupper( $sort ), 'bump' => 'DESC' ) );
-		} else {
-			$q->set( 'orderby', array( 'feat' => 'DESC', 'bump' => 'DESC' ) );
+		foreach ( qs_listing_query_vars( 'qs_f' ) as $k => $v ) {
+			$q->set( $k, $v );
 		}
 	}
 );
+/**
+ * Filters and order for ad lists: meta_query, tax_query, orderby (and meta_key).
+ * $get( key ) returns the filter value: the URL on the site, the request in the app API.
+ */
+function qs_listing_query_vars( $get ) {
+	$out  = array();
+	$meta = array( 'relation' => 'AND', 'feat' => array( 'key' => '_qs_featured', 'type' => 'NUMERIC' ), 'bump' => array( 'key' => '_qs_bump', 'type' => 'NUMERIC' ) );
+	$tax  = array();
+	if ( $g = $get( 'group' ) ) {
+		$meta[] = array( 'key' => '_qs_group', 'value' => $g );
+	}
+	foreach ( array( 'body', 'cond', 'gear', 'fuel', 'cyl', 'specs', 'color', 'part_type', 'deal' ) as $k ) {
+		if ( '' !== ( $v = $get( $k ) ) ) {
+			$meta[] = array( 'key' => '_qs_' . $k, 'value' => $v );
+		}
+	}
+	foreach ( array( 'year' => array( 'ymin', 'ymax' ), 'price' => array( 'pmin', 'pmax' ), 'km' => array( 'kmin', 'kmax' ) ) as $k => $r ) {
+		if ( '' !== $get( $r[0] ) && is_numeric( $get( $r[0] ) ) ) {
+			$meta[] = array( 'key' => '_qs_' . $k, 'value' => (float) $get( $r[0] ), 'compare' => '>=', 'type' => 'NUMERIC' );
+		}
+		if ( '' !== $get( $r[1] ) && is_numeric( $get( $r[1] ) ) ) {
+			$meta[] = array( 'key' => '_qs_' . $k, 'value' => (float) $get( $r[1] ), 'compare' => '<=', 'type' => 'NUMERIC' );
+		}
+	}
+	if ( $b = $get( 'brand' ) ) {
+		$meta[] = array( 'key' => '_qs_brand', 'value' => $b, 'compare' => 'LIKE' );
+	}
+	$out['meta_query'] = $meta;
+	foreach ( array( 'sec' => 'qs_cat', 'cat' => 'qs_cat', 'itype' => 'qs_cat', 'model' => 'qs_make', 'make' => 'qs_make', 'city' => 'qs_city', 'emirate' => 'qs_city' ) as $k => $t ) {
+		if ( $v = $get( $k ) ) {
+			if ( 'make' === $k && $get( 'model' ) ) {
+				continue;
+			}
+			if ( 'emirate' === $k && $get( 'city' ) ) {
+				continue;
+			}
+			if ( 'sec' === $k && ( $get( 'cat' ) || $get( 'itype' ) ) ) {
+				continue;
+			}
+			if ( 'cat' === $k && $get( 'itype' ) ) {
+				continue;
+			}
+			$tax[] = array( 'taxonomy' => $t, 'field' => 'slug', 'terms' => $v );
+		}
+	}
+	if ( $tax ) {
+		$out['tax_query'] = $tax;
+	}
+	$sort = $get( 'sort' );
+	if ( 'asc' === $sort || 'desc' === $sort ) {
+		$out['meta_key'] = '_qs_price';
+		$out['orderby'] = array( 'meta_value_num' => strtoupper( $sort ), 'bump' => 'DESC' );
+	} else {
+		$out['orderby'] = array( 'feat' => 'DESC', 'bump' => 'DESC' );
+	}
+	return $out;
+}
 
 /* Search also matches brand-like fields and the English title. */
 add_filter(
 	'posts_search',
 	function ( $search, $q ) {
 		global $wpdb;
-		if ( ! $search || is_admin() || ! $q->is_main_query() || ! $q->is_search() ) {
+		if ( ! $search || is_admin() || ! ( ( $q->is_main_query() && $q->is_search() ) || $q->get( 'qs_search_ext' ) ) ) {
 			return $search;
 		}
 		$like = '%' . $wpdb->esc_like( $q->get( 's' ) ) . '%';

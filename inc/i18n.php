@@ -7,8 +7,11 @@ defined( 'ABSPATH' ) || exit;
 
 const QS_LANGS = array( 'ar', 'en' );
 
-function qs_lang() {
+function qs_lang( $set = null ) {
 	static $lang = null;
+	if ( $set && in_array( $set, QS_LANGS, true ) ) {
+		$lang = $set; // the app API picks the language per request
+	}
 	if ( null === $lang ) {
 		$lang = 'ar';
 		if ( isset( $_GET['lang'] ) && in_array( $_GET['lang'], QS_LANGS, true ) ) {
