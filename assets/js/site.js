@@ -227,10 +227,41 @@
       });
       var agree = $('input[name=agree]', f);
       if (agree && !agree.checked) { agree.closest('.check').classList.add('err'); bad = bad || agree; }
+      /* Posting without an account: name + password (new phone) or the account's password (known phone) */
+      var g = $('[data-guest]', f);
+      if (g && !g.hidden) {
+        var pw = $('input[name=acc_pass]', g), nm = $('input[name=acc_name]', g), known = !$('[data-guest-exists]', g).hidden;
+        [pw, known ? null : nm].forEach(function (i) { if (!i) return; var ok = String(i.value).trim() !== ''; i.closest('.fld').classList.toggle('err', !ok); if (!ok && !bad) bad = i.closest('.fld'); });
+      }
       var msg = $('[data-form-err]', f); if (msg) msg.hidden = !bad;
-      if (bad) { e.preventDefault(); bad.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      if (bad) { e.preventDefault(); bad.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+      if (g && !g.hidden && f.dataset.ok !== '1') {
+        e.preventDefault();
+        var btn = $('button[type=submit]', f); if (btn) btn.disabled = true;
+        guestCheck(f, true).then(function (r) {
+          if (btn) btn.disabled = false;
+          if (r && r.ok) { f.dataset.ok = '1'; f.submit(); }
+        });
+      }
     });
+    var ph = $('input[name=phone]', f);
+    if (ph && $('[data-guest]', f)) ph.addEventListener('change', function () { guestCheck(f, false); });
   });
+  function guestCheck(f, full) {
+    var g = $('[data-guest]', f), fd = new FormData();
+    fd.append('action', 'qs_guest_check');
+    ['phone', 'acc_name', 'acc_pass', 'acc_email'].forEach(function (k) { var i = $('[name=' + k + ']', f); fd.append(k, i ? i.value : ''); });
+    if (!full) fd.set('acc_pass', '');
+    return fetch(QS.ajax, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (r) {
+      $('[data-guest-exists]', g).hidden = !r.exists;
+      $$('[data-guest-new]', g).forEach(function (el) { el.hidden = r.exists; $$('input', el).forEach(function (i) { i.disabled = r.exists; }); });
+      var pw = $('input[name=acc_pass]', g); if (pw) pw.autocomplete = r.exists ? 'current-password' : 'new-password';
+      var er = $('[data-guest-err]', g);
+      if (full) { er.hidden = r.ok; er.textContent = r.msg || ''; if (!r.ok) g.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      else er.hidden = true;
+      return r;
+    }).catch(function () { var b = $('button[type=submit]', f); if (b) b.disabled = false; return null; });
+  }
   /* Filter forms use dependent selects too (make → model, emirate → city, sub → item) */
   $$('form.filters').forEach(deps);
 

@@ -99,6 +99,7 @@ add_action(
 			'qs-site',
 			'QS',
 			array(
+				'ajax' => admin_url( 'admin-ajax.php' ),
 				'txt' => array(
 					'add_fav' => qs_t( 'add_fav' ), 'in_fav' => qs_t( 'in_fav' ), 'copied' => qs_t( 'link_copied' ),
 					'del' => qs_t( 'confirm_delete' ), 'fav_added' => qs_t( 'fav_added' ), 'fav_rm' => qs_t( 'fav_removed' ),

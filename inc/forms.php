@@ -170,13 +170,85 @@ function qs_handle_profile() {
 	qs_back( qs_page_url( 'account' ), array( 'qs_msg' => 'saved_ok' ) );
 }
 
+/* ---------- Posting without an account: the account is made from the ad's phone ---------- */
+/** The account that already uses this phone (as its login or its saved number), if any. */
+function qs_user_by_phone( $phone ) {
+	if ( ! $phone ) {
+		return 0;
+	}
+	if ( $id = username_exists( $phone ) ) {
+		return (int) $id;
+	}
+	$u = get_users( array( 'meta_key' => 'qs_phone', 'meta_value' => $phone, 'number' => 1, 'fields' => 'ID' ) );
+	return $u ? (int) $u[0] : 0;
+}
+/**
+ * Checks the "Your account" part of the post form.
+ * Phone already registered → the password must match that account. New phone → name, password (8+) and an unused email if given.
+ * Returns array( 'ok' => bool, 'exists' => bool, 'err' => text key ).
+ */
+function qs_guest_check( $phone, $name, $pass, $email ) {
+	if ( ! $phone ) {
+		return array( 'ok' => false, 'exists' => false, 'err' => 'reg_err_phone' );
+	}
+	if ( $uid = qs_user_by_phone( $phone ) ) {
+		$u  = get_userdata( $uid );
+		$ok = $pass && $u && wp_check_password( $pass, $u->user_pass, $uid );
+		return array( 'ok' => $ok, 'exists' => true, 'err' => $ok ? '' : ( $pass ? 'acc_wrong_pw' : 'acc_exists' ) );
+	}
+	$err = ! $name ? 'reg_err_name' : ( strlen( $pass ) < 8 ? 'reg_err_pw' : '' );
+	if ( ! $err && $email ) {
+		$err = ! is_email( $email ) ? 'reg_err_email' : ( email_exists( $email ) ? 'acc_email_used' : '' );
+	}
+	return array( 'ok' => ! $err, 'exists' => false, 'err' => $err );
+}
+function qs_guest_fields() {
+	return array( qs_phone_norm( qs_req( 'phone' ) ), qs_req( 'acc_name' ), (string) wp_unslash( $_POST['acc_pass'] ?? '' ), sanitize_email( qs_req( 'acc_email' ) ) );
+}
+/* Checked by the page before sending, so nothing typed or attached is lost. */
+add_action(
+	'wp_ajax_nopriv_qs_guest_check',
+	function () {
+		$r        = qs_guest_check( ...qs_guest_fields() );
+		$r['msg'] = $r['err'] ? qs_t( $r['err'] ) : '';
+		wp_send_json( $r );
+	}
+);
+add_action( 'wp_ajax_qs_guest_check', fn() => wp_send_json( array( 'ok' => true, 'exists' => false, 'err' => '' ) ) );
+/** Signs the advertiser in (existing account) or creates the account; returns the user id. */
+function qs_guest_account() {
+	if ( '' !== qs_req( 'company_site' ) ) { // filled only by bots
+		qs_back( home_url( '/' ) );
+	}
+	list( $phone, $name, $pass, $email ) = qs_guest_fields();
+	$r = qs_guest_check( $phone, $name, $pass, $email );
+	if ( ! $r['ok'] ) {
+		qs_back( qs_page_url( 'post' ), array( 'qs_err' => $r['err'] ) );
+	}
+	if ( $r['exists'] ) {
+		$uid = qs_user_by_phone( $phone );
+	} else {
+		$uid = wp_insert_user( array( 'user_login' => $phone, 'user_pass' => $pass, 'user_email' => $email, 'display_name' => $name, 'nickname' => $name, 'first_name' => $name, 'role' => 'subscriber' ) );
+		if ( is_wp_error( $uid ) ) {
+			qs_back( qs_page_url( 'post' ), array( 'qs_err' => 'reg_err_exists' ) );
+		}
+		update_user_meta( $uid, 'qs_phone', $phone );
+		update_user_meta( $uid, 'qs_from_ad', 1 );
+		wp_new_user_notification( $uid, null, 'admin' );
+		$GLOBALS['qs_new_account'] = 1;
+	}
+	wp_set_current_user( $uid );
+	wp_set_auth_cookie( $uid, true, is_ssl() );
+	return (int) $uid;
+}
+
 /* ---------- Post / edit an ad (free; waits for approval) ---------- */
-add_action( 'admin_post_nopriv_qs_post_ad', fn() => qs_back( qs_page_url( 'login', array( 'redirect' => qs_page_url( 'post' ) ) ) ) );
+add_action( 'admin_post_nopriv_qs_post_ad', 'qs_handle_post_ad' );
 add_action( 'admin_post_qs_post_ad', 'qs_handle_post_ad' );
 function qs_handle_post_ad() {
 	qs_nonce( 'qs_post_ad' );
-	$uid  = get_current_user_id();
-	$edit = absint( $_POST['edit'] ?? 0 );
+	$uid  = is_user_logged_in() ? get_current_user_id() : 0;
+	$edit = $uid ? absint( $_POST['edit'] ?? 0 ) : 0;
 	if ( $edit && ( 'listing' !== get_post_type( $edit ) || (int) get_post_field( 'post_author', $edit ) !== $uid ) ) {
 		wp_die( 'Not allowed', 403 );
 	}
@@ -210,6 +282,9 @@ function qs_handle_post_ad() {
 	}
 	if ( empty( $_POST['agree'] ) ) {
 		qs_back( $back, array( 'qs_err' => 'err_agree' ) );
+	}
+	if ( ! $uid ) {
+		$uid = qs_guest_account(); // the ad is valid: sign in or create the account now
 	}
 	if ( ! $edit ) {
 		$today = get_posts( array( 'post_type' => 'listing', 'author' => $uid, 'post_status' => 'any', 'fields' => 'ids', 'posts_per_page' => 50, 'date_query' => array( array( 'after' => '24 hours ago' ) ) ) );
@@ -285,7 +360,7 @@ function qs_handle_post_ad() {
 		}
 	}
 	wp_mail( get_option( 'admin_email' ), '[' . qs_t( 'site_name' ) . '] ' . ( $edit ? 'Ad edited' : 'New ad' ) . ' — ' . $v['title'], admin_url( 'post.php?post=' . $id . '&action=edit' ) );
-	qs_back( qs_page_url( 'post' ), array( 'done' => $id, 'edited' => $edit ? 1 : '' ) );
+	qs_back( qs_page_url( 'post' ), array( 'done' => $id, 'edited' => $edit ? 1 : '', 'newacc' => empty( $GLOBALS['qs_new_account'] ) ? '' : 1 ) );
 }
 function qs_upload( $field, $post_id, $i ) {
 	require_once ABSPATH . 'wp-admin/includes/file.php';

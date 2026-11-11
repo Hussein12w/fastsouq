@@ -8,20 +8,14 @@ $uid  = get_current_user_id();
 $head = function ( $title ) {
 	echo '<section class="page-head slim"><div class="wrap">' . qs_crumbs( array( array( qs_t( 'post_ad' ) ) ) ) . '<h1>' . esc_html( $title ) . '</h1><p>' . esc_html( qs_t( 'post_sub' ) ) . '</p></div></section>'; // phpcs:ignore
 };
-if ( ! $uid ) {
-	$head( qs_t( 'post_title' ) );
-	echo '<div class="wrap post"><div class="post-card gate">' . qs_ic( 'shield' ) . '<h2>' . esc_html( qs_t( 'login_first_t' ) ) . '</h2><p>' . esc_html( qs_t( 'login_first_p' ) ) . '</p><div class="row-btns center"><a class="btn btn-y btn-lg" href="' . esc_url( qs_page_url( 'login', array( 'redirect' => qs_page_url( 'post' ) ) ) ) . '">' . qs_ic( 'user' ) . ' ' . esc_html( qs_t( 'login' ) ) . '</a><a class="btn btn-line btn-lg" href="' . esc_url( qs_page_url( 'login', array( 'tab' => 'register', 'redirect' => qs_page_url( 'post' ) ) ) ) . '">' . esc_html( qs_t( 'reg_tab' ) ) . '</a></div></div></div>'; // phpcs:ignore
-	get_footer();
-	return;
-}
 if ( $done = absint( qs_f( 'done' ) ) ) {
 	$head( qs_t( 'post_title' ) );
-	echo '<div class="wrap post"><div class="post-card done"><div class="done-ic">' . qs_ic( 'eye' ) . '</div><h2>' . esc_html( qs_t( 'post_ok_t' ) ) . '</h2><p>' . esc_html( qs_t( qs_f( 'edited' ) ? 'edit_ok_p' : 'post_ok_p' ) ) . '</p><p class="ref">' . esc_html( qs_t( 'ad_no' ) ) . ': <b>QS-' . (int) ( 1000 + $done ) . '</b></p><div class="done-acts"><a class="btn btn-y" href="' . esc_url( qs_page_url( 'post' ) ) . '">' . qs_ic( 'plus' ) . ' ' . esc_html( qs_t( 'post_another' ) ) . '</a><a class="btn btn-line" href="' . esc_url( qs_page_url( 'account', array( 'tab' => 'ads' ) ) ) . '">' . esc_html( qs_t( 'my_ads' ) ) . '</a></div></div></div>'; // phpcs:ignore
+	echo '<div class="wrap post"><div class="post-card done"><div class="done-ic">' . qs_ic( 'eye' ) . '</div><h2>' . esc_html( qs_t( 'post_ok_t' ) ) . '</h2><p>' . esc_html( qs_t( qs_f( 'edited' ) ? 'edit_ok_p' : 'post_ok_p' ) ) . '</p><p class="ref">' . esc_html( qs_t( 'ad_no' ) ) . ': <b>QS-' . (int) ( 1000 + $done ) . '</b></p>' . ( qs_f( 'newacc' ) ? '<div class="review-note acc-made">' . qs_ic( 'user' ) . ' ' . esc_html( qs_t( 'acc_made' ) ) . '</div>' : '' ) . '<div class="done-acts"><a class="btn btn-y" href="' . esc_url( qs_page_url( 'post' ) ) . '">' . qs_ic( 'plus' ) . ' ' . esc_html( qs_t( 'post_another' ) ) . '</a><a class="btn btn-line" href="' . esc_url( qs_page_url( 'account', array( 'tab' => 'ads' ) ) ) . '">' . esc_html( qs_t( 'my_ads' ) ) . '</a></div></div></div>'; // phpcs:ignore
 	get_footer();
 	return;
 }
 
-$edit = absint( qs_f( 'edit' ) );
+$edit = $uid ? absint( qs_f( 'edit' ) ) : 0;
 if ( $edit && ( 'listing' !== get_post_type( $edit ) || (int) get_post_field( 'post_author', $edit ) !== $uid ) ) {
 	$edit = 0;
 }
@@ -161,7 +155,21 @@ $field = function ( $k, $f, $g ) use ( $v, $req, $secs ) {
 			</div>
 		</div>
 
-		<div class="post-card" data-after-type<?php echo $section ? '' : ' hidden'; ?>><h2><span class="step-n">5</span> <?php qs_e( 'confirm' ); ?></h2>
+		<?php if ( ! $uid ) : ?>
+		<div class="post-card guest-card" data-after-type data-guest<?php echo $section ? '' : ' hidden'; ?>><h2><span class="step-n">5</span> <?php qs_e( 'acc_t' ); ?></h2>
+			<p class="muted"><?php qs_e( 'acc_p' ); ?> <a href="<?php echo esc_url( qs_page_url( 'login', array( 'redirect' => qs_page_url( 'post' ) ) ) ); ?>"><b><?php qs_e( 'acc_have' ); ?></b></a></p>
+			<div class="review-note" data-guest-exists hidden><?php echo qs_ic( 'user' ) . ' '; qs_e( 'acc_exists' ); ?></div>
+			<div class="form-grid">
+				<label class="fld" data-guest-new><span><?php qs_e( 'acc_name' ); ?> <i>*</i></span><input name="acc_name" autocomplete="name"></label>
+				<label class="fld" data-guest-new><span><?php qs_e( 'acc_email' ); ?></span><input type="email" name="acc_email" class="ltr-in" autocomplete="email"><small class="muted"><?php qs_e( 'acc_email_hint' ); ?></small></label>
+				<label class="fld"><span><?php qs_e( 'acc_pw' ); ?> <i>*</i></span><input type="password" name="acc_pass" class="ltr-in" autocomplete="new-password"><small class="muted" data-guest-new><?php qs_e( 'reg_err_pw' ); ?></small></label>
+			</div>
+			<p class="guest-err" data-guest-err hidden></p>
+			<input type="text" name="company_site" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+		</div>
+		<?php endif; ?>
+
+		<div class="post-card" data-after-type<?php echo $section ? '' : ' hidden'; ?>><h2><span class="step-n"><?php echo $uid ? 5 : 6; ?></span> <?php qs_e( 'confirm' ); ?></h2>
 			<div class="review-note"><?php echo qs_ic( 'eye' ) . ' '; qs_e( 'review_note' ); ?></div>
 			<label class="check"><input type="checkbox" name="agree" value="1"> <?php qs_e( 'declare' ); ?></label>
 			<div class="post-foot"><span class="muted small" data-form-err hidden><?php echo qs_ic( 'info', 'sm' ) . ' '; qs_e( 'err_required' ); ?></span><button class="btn btn-y btn-lg" type="submit"><?php echo qs_ic( 'send' ) . ' '; qs_e( 'publish' ); ?></button></div>

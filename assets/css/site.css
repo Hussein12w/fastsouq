@@ -427,3 +427,12 @@ html,body{overflow-x:clip}
 /* 5 per row on laptops and desktops */
 @media (min-width:1001px) and (max-width:1200px){.grid.g5{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.grid.g5 .card h3{font-size:13.5px}}
 .qs-card .cbody>.c-acts{margin-top:auto;padding-top:10px}
+
+/* Post form: posting without an account */
+.guest-card>p.muted{margin:-4px 0 14px}
+.guest-card>p.muted a{color:var(--y)}
+.guest-card .review-note{margin-bottom:14px}
+.guest-card .fld small{display:block;margin-top:5px;font-size:12px}
+.guest-err{margin-top:12px;padding:10px 14px;border-radius:10px;background:#FDECEC;color:#B42318;font-weight:700;font-size:14px}
+.hp{position:absolute!important;inset-inline-start:-9999px;width:1px;height:1px;opacity:0}
+.acc-made{margin:14px auto 0;max-width:460px}
